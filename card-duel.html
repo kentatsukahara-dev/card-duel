@@ -1,0 +1,1214 @@
+<title>毒と炎のカード決闘</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: card table seen from one seat — opponents across the felt, log + stage in the middle, your hand at the bottom edge. Single deliberate dark look; the felt recolors per stage. */
+:root{
+  --felt:#18282e; --felt-2:#203339; --felt-3:#2a4249; --line:#3a555c; --glow:#2a4249;
+  --ink:#eef0e8; --muted:#9db0b0; --brass:#d8b26a; --danger:#e25b4f; --ok:#6cc070; --mpc:#4fb3e8;
+  --c-atk:#de5a4e; --c-def:#5f8fdc; --c-psn:#a073dc; --c-fire:#ec8a3c; --c-cure:#3fbcac;
+  --c-heal:#72c46a; --c-buff:#e2bb4c; --c-debuff:#9095ae; --c-stage:#c9a77c; --c-mp:#4fb3e8; --c-skill:#e05a98; --c-magic:#7a6cf2; --c-draw:#a9c04a;
+  --card:#f3efe4; --card-ink:#1d2528;
+  --f-display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  color-scheme:dark;
+}
+body[data-stage=st_swamp]{--felt:#16231a;--felt-2:#223421;--felt-3:#2d4329;--line:#4b6338;--glow:#8a5cc0}
+body[data-stage=st_volcano]{--felt:#241211;--felt-2:#3a1914;--felt-3:#4a231b;--line:#713424;--glow:#f0662a}
+body[data-stage=st_sanct]{--felt:#192036;--felt-2:#252f4d;--felt-3:#313b5e;--line:#5862a0;--glow:#f2dc96}
+body[data-stage=st_fort]{--felt:#1d2024;--felt-2:#2a2e33;--felt-3:#383d44;--line:#5c636b;--glow:#a7b0ba}
+body[data-stage=st_arena]{--felt:#281e12;--felt-2:#3a2b18;--felt-3:#4a3820;--line:#765c36;--glow:#e8a84a}
+body[data-stage=st_spring]{--felt:#0f2528;--felt-2:#15373b;--felt-3:#1e4a4f;--line:#2f7077;--glow:#4fd8e2}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:radial-gradient(ellipse 90% 55% at 50% 105%,color-mix(in srgb,var(--glow) 32%,transparent),transparent 70%),radial-gradient(ellipse at 50% 30%,var(--felt-2),var(--felt) 70%);background-attachment:fixed;background-color:var(--felt);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.6}
+#app{max-width:1320px;margin:0 auto;padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;text-wrap:balance;margin:0;letter-spacing:.02em}
+.num{font-variant-numeric:tabular-nums}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;justify-content:space-between}
+.top h1{font-size:20px;color:var(--brass)}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pill{border:1px solid var(--line);border-radius:999px;padding:2px 12px;font-size:13px;color:var(--muted);background:rgba(0,0,0,.18)}
+.pill b{color:var(--ink);font-weight:700}
+.btn{border:1px solid var(--line);background:var(--felt-3);border-radius:8px;padding:8px 14px;font-weight:700}
+.btn:hover{border-color:var(--brass)}
+.btn.primary{background:var(--brass);color:#1d1a12;border-color:var(--brass)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:4px 10px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.opps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.seat{background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.seat.dead{opacity:.4}
+.seat-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.seat-h h3{font-size:16px}
+.tag{font-size:11px;letter-spacing:.08em;color:var(--brass);border:1px solid var(--brass);border-radius:4px;padding:0 6px}
+.hp{display:flex;align-items:center;gap:8px}
+.bar{flex:1;height:10px;background:rgba(0,0,0,.35);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);transition:width .3s}
+.bar i.low{background:var(--danger)}
+.bar.mp{height:6px}
+.bar.mp i{background:var(--mpc)}
+.hp .num{font-weight:700;min-width:64px;text-align:right;font-size:13px}
+.hp .lb{font-size:11px;color:var(--muted);width:20px;letter-spacing:.05em}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:12px;padding:1px 8px;border-radius:999px;background:color-mix(in srgb,var(--cc) 22%,transparent);border:1px solid color-mix(in srgb,var(--cc) 60%,transparent);color:var(--ink);white-space:nowrap}
+.chip.hidden{--cc:var(--muted);border-style:dashed}
+.sub{font-size:12px;color:var(--muted)}
+.mid{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:12px}
+@media (max-width:640px){.mid{grid-template-columns:1fr}}
+.stage{border:1px solid color-mix(in srgb,var(--glow) 70%,var(--line));border-radius:12px;padding:12px;background:color-mix(in srgb,var(--glow) 12%,transparent)}
+.stage-thumb{height:72px;border-radius:8px;margin:-4px -4px 8px;background:#111 center/cover no-repeat;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.stage .sub{color:var(--glow);letter-spacing:.1em}
+body:not([data-stage]) .stage .sub,body[data-stage=""] .stage .sub{color:var(--muted)}
+.stage h3{font-size:18px;margin:2px 0 4px}
+.log{border:1px solid var(--line);border-radius:12px;padding:8px 12px;max-height:150px;overflow-y:auto;font-size:13px;background:rgba(0,0,0,.18)}
+.log p{margin:0;padding:2px 0;border-bottom:1px dashed rgba(255,255,255,.06);color:var(--muted)}
+.log p:first-child{color:var(--ink);font-weight:700}
+.me{border:1px solid var(--brass);border-radius:14px;padding:14px;background:rgba(0,0,0,.22);display:flex;flex-direction:column;gap:10px}
+.me-h{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+.me-h h2{font-size:20px}
+.bars{display:flex;flex-direction:column;gap:4px;min-width:220px;flex:1;max-width:420px}
+.hand{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+.card{--cc:var(--muted);position:relative;background:var(--card);color:var(--card-ink);border-radius:10px;border:none;padding:0;text-align:left;display:flex;flex-direction:column;min-height:158px;overflow:hidden;box-shadow:0 2px 0 rgba(0,0,0,.35);transition:transform .15s}
+.card:hover{transform:translateY(-3px)}
+.card.sel{outline:3px solid var(--brass);transform:translateY(-6px)}
+.card.no{opacity:.55}
+.card .band{background:var(--cc);color:#fff;font-size:11px;letter-spacing:.1em;padding:3px 8px;font-weight:700;display:flex;justify-content:space-between;gap:4px}
+.card .band .cost{background:rgba(0,0,0,.28);border-radius:4px;padding:0 5px;letter-spacing:0}
+.card .nm{font-family:var(--f-display);font-size:16px;padding:6px 8px 2px;line-height:1.25;padding-right:28px}
+.card .tx{font-size:12px;padding:0 8px 8px;line-height:1.45;color:#3b4649}
+.card .val{position:absolute;right:8px;top:24px;font-family:var(--f-display);font-size:22px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);z-index:1}
+.card .art{height:64px;display:grid;place-items:center;color:#fff;position:relative;overflow:hidden;
+  background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--cc) 45%,#fff) 0,var(--cc) 55%,color-mix(in srgb,var(--cc) 70%,#000) 100%)}
+.card .art::before{content:"";position:absolute;inset:-20%;background:repeating-conic-gradient(from 0deg at 50% 45%,rgba(255,255,255,.10) 0 8deg,transparent 8deg 24deg)}
+.card .art svg{position:relative;width:44px;height:44px;fill:currentColor;filter:drop-shadow(0 2px 0 rgba(0,0,0,.28))}
+.card .art.pic{height:84px;background-size:cover;background-position:center;background-color:#111}
+.card .art.pic::before{display:none}
+.art-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.art-grid .item{display:flex;flex-direction:column;gap:6px}
+.art-grid .card{cursor:default}.art-grid .card:hover{transform:none}
+textarea.paste{width:100%;min-height:90px;background:var(--felt-3);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:12px/1.4 ui-monospace,monospace;padding:8px}
+.seat.turn{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}
+.seat .cpu{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.rating{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:baseline}
+.rating .big{font-family:var(--f-display);font-size:40px;color:var(--brass);line-height:1}
+.rating .tier{font-family:var(--f-display);font-size:18px}
+.hist{display:flex;flex-wrap:wrap;gap:6px}
+.hist span{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:1px 8px}
+.up{color:var(--ok)} .dn{color:var(--danger)}
+.thinking{color:var(--brass);font-weight:700;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.4}}
+.title-panel{align-items:stretch;padding-block:12px}
+.crest{display:flex;gap:10px}
+.crest .av{width:48px;height:48px}.crest .av svg{width:28px;height:28px}
+.hero.big{font-size:clamp(34px,8vw,64px);line-height:1.05}
+.lead{font-size:16px;color:var(--muted);margin:0}
+.menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.mbtn{text-align:left;border:1px solid var(--line);background:rgba(0,0,0,.22);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;transition:border-color .15s,transform .15s}
+.mbtn b{font-family:var(--f-display);font-weight:400;font-size:19px;color:var(--ink)}
+.mbtn span{color:var(--muted);font-size:13px}
+.mbtn.main{border-color:color-mix(in srgb,var(--brass) 70%,var(--line));background:color-mix(in srgb,var(--brass) 10%,rgba(0,0,0,.2))}
+.mbtn:hover{border-color:var(--brass);transform:translateY(-2px)}
+.av{width:36px;height:36px;flex:none;border-radius:50%;background:var(--felt-3);border:1px solid var(--line);display:inline-grid;place-items:center;color:var(--brass)}
+.av svg{width:22px;height:22px;fill:currentColor}
+.pcard{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:rgba(0,0,0,.2)}
+.pcard{flex-wrap:wrap}.pcard .prs{margin-left:auto;display:flex;gap:16px}
+.pcard .pr{display:flex;flex-direction:column;align-items:flex-end}.pcard .pr.dim{opacity:.45}
+.pcard .pr .num{font-family:var(--f-display);font-size:24px;color:var(--brass);line-height:1}
+.notice{border:1px solid var(--line);border-left:4px solid var(--brass);border-radius:8px;padding:10px 14px;background:rgba(0,0,0,.2)}
+.ok{color:var(--ok);font-size:13px}
+.big-btn{font-size:17px;padding:12px 22px}
+.icon-pick{display:flex;flex-wrap:wrap;gap:8px}
+.ip{position:relative;cursor:pointer}
+.ip input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.ip .av{width:44px;height:44px}
+.ip input:checked+span .av{border:2px solid var(--brass);background:color-mix(in srgb,var(--brass) 25%,var(--felt-3))}
+.ip input:focus-visible+span .av{outline:2px solid var(--brass);outline-offset:2px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+.tbl table{width:100%;border-collapse:collapse;min-width:420px}
+.tbl th,.tbl td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+.tbl th{font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.06em}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .me-row{background:color-mix(in srgb,var(--brass) 12%,transparent)}
+.who{display:inline-flex;align-items:center;gap:8px}
+.watch-list{display:flex;flex-direction:column;gap:8px}
+.watch-item{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:rgba(0,0,0,.2)}
+.watch-item .vs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;flex:1;min-width:0}
+.vs-mark{font-family:var(--f-display);color:var(--danger);margin:0 6px}
+.top .sub{letter-spacing:.08em}
+.card .mine{position:absolute;right:6px;bottom:4px;font-size:10px;color:var(--cc);font-weight:700;letter-spacing:.06em}
+[data-cat=atk]{--cc:var(--c-atk)} [data-cat=def]{--cc:var(--c-def)} [data-cat=psn]{--cc:var(--c-psn)} [data-cat=fire]{--cc:var(--c-fire)}
+[data-cat=cure]{--cc:var(--c-cure)} [data-cat=heal]{--cc:var(--c-heal)} [data-cat=buff]{--cc:var(--c-buff)} [data-cat=debuff]{--cc:var(--c-debuff)}
+[data-cat=stage]{--cc:var(--c-stage)} [data-cat=mp]{--cc:var(--c-mp)} [data-cat=skill]{--cc:var(--c-skill)} [data-cat=magic]{--cc:var(--c-magic)} [data-cat=draw]{--cc:var(--c-draw)}
+.combo-chip{font-size:13px;font-weight:700;color:#fff;background:var(--c-skill);border-radius:6px;padding:4px 10px}
+.shop{border:1px solid color-mix(in srgb,var(--mpc) 55%,var(--line));border-radius:12px;padding:12px;background:color-mix(in srgb,var(--mpc) 7%,transparent);display:flex;flex-direction:column;gap:10px}
+.shop-h{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.shop-h h3{font-size:17px;color:var(--mpc)}
+.shop-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.board{display:grid;grid-template-columns:210px minmax(0,1fr);gap:16px;align-items:start}
+.board.spec{grid-template-columns:minmax(0,1fr)}
+.maincol{display:flex;flex-direction:column;gap:16px;min-width:0}
+.shopcol{position:sticky;top:max(12px,env(safe-area-inset-top,0px));min-width:0}
+.shopcol .shop-h{flex-direction:column;align-items:stretch;gap:6px}
+.shopcol .shop-row{grid-template-columns:minmax(0,1fr);gap:12px}
+.shopcol .shop-item .card{min-height:0}
+@media (max-width:860px){.board{grid-template-columns:minmax(0,1fr)}.shopcol{position:static;order:2}.shopcol .shop-h{flex-direction:row;align-items:center}.shopcol .shop-row{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:480px){.shop-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.shop-item{display:flex;flex-direction:column;gap:6px;min-width:0}
+.shop-item .card{min-height:130px;cursor:default}.shop-item .card:hover{transform:none}
+.card .rare{position:absolute;left:8px;bottom:4px;font-size:10px;font-weight:700;color:var(--cc);letter-spacing:.08em}
+.peek{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.peek .card{cursor:default;min-height:130px}.peek .card:hover{transform:none}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.actions .why{color:var(--danger);font-size:13px}
+.actions .grow{flex:1}
+.ov{position:fixed;inset:0;background:var(--felt);z-index:20;overflow-y:auto;padding-block:max(24px,env(safe-area-inset-top,0px)) 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.ov.dim{background:rgba(10,18,20,.94)}
+.panel{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.panel.wide{max-width:980px}
+.hero{font-size:clamp(28px,6vw,44px);color:var(--brass);line-height:1.15}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);letter-spacing:.04em}
+.form label.check{flex-direction:row;align-items:center;gap:8px;font-size:13px;color:var(--ink)}
+.form input,.form select{background:var(--felt-3);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--ink);font:inherit;font-size:15px;width:100%;min-width:0}
+.form input[type=checkbox]{width:18px;height:18px}
+.box{background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.box h2{font-size:18px}
+.maker{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:16px;align-items:start}
+@media (max-width:560px){.maker{grid-template-columns:1fr}}
+.maker .card{cursor:default}.maker .card:hover{transform:none}
+.err{color:var(--danger);font-size:13px;min-height:1em}
+.rules ul{margin:4px 0;padding-left:20px}
+.rules li{margin:2px 0}
+.cat-h{display:flex;align-items:baseline;gap:8px;margin-top:8px}
+.cat-h h3{font-size:17px;color:var(--cc)}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.cat-grid .card{min-height:130px;cursor:default}
+.cat-grid .card:hover{transform:none}
+.cnt{position:absolute;right:6px;bottom:4px;font-size:11px;color:#6b7578}
+.mycards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.mycards .item{display:flex;flex-direction:column;gap:6px}
+.mycards .card{cursor:default;min-height:130px}.mycards .card:hover{transform:none}
+.pass-notes{background:rgba(0,0,0,.25);border-radius:10px;padding:10px 14px;color:var(--muted)}
+.pass-notes p{margin:2px 0}
+.toast{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:30}
+.toast div{font-family:var(--f-display);font-size:clamp(34px,9vw,72px);color:var(--glow);text-shadow:0 0 30px color-mix(in srgb,var(--glow) 60%,transparent);animation:stageIn 1.8s ease forwards;text-align:center}
+.toast small{display:block;font-family:var(--f-body);font-size:16px;color:var(--ink);text-shadow:none}
+@keyframes stageIn{0%{opacity:0;transform:scale(.9)}20%{opacity:1;transform:scale(1)}75%{opacity:1}100%{opacity:0;transform:scale(1.04)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:.01s!important}}
+</style>
+
+<div id="app"></div>
+
+<script>
+const CATS={atk:'攻撃',buff:'強化',def:'防御',psn:'毒',fire:'炎症',heal:'回復',cure:'治療',mp:'MP',draw:'ドロー',skill:'必殺',magic:'魔法',debuff:'弱体',stage:'ステージ'};
+const PRICE={atk:2,buff:2,def:2,psn:2,fire:2,heal:2,cure:1,debuff:2,magic:2,skill:2,draw:1};
+const HANDMAX=10;
+const MPMAX=10;
+const BASE={
+  slash:{name:'斬撃',cat:'atk',n:9,dmg:3,text:'3ダメージ'},
+  kick:{name:'回し蹴り',cat:'atk',n:4,dmg:4,text:'4ダメージ'},
+  whirl:{name:'旋風斬り',cat:'atk',n:3,dmg:2,aoe:1,text:'相手全員に2ダメージ'},
+  joint:{name:'合わせ斬り',cat:'atk',n:3,dmg:3,comboX2:1,text:'3ダメージ。合わせ技が発動すると効果2倍'},
+  rally:{name:'号令',cat:'buff',n:2,fx:'rally',text:'次の攻撃カードが相手全員に当たる'},
+  firerain:{name:'火の雨',cat:'fire',n:2,inflame:2,aoe:1,text:'相手全員に炎症2ターン'},
+  supply:{name:'補給',cat:'draw',n:5,draw:2,text:'2枚引く'},
+  spark:{name:'閃き',cat:'draw',n:4,draw:1,quick:1,text:'1枚引く。使用枠を消費しない'},
+  council:{name:'作戦会議',cat:'draw',n:2,cost:2,draw:3,text:'3枚引く'},
+  plunder:{name:'略奪',cat:'draw',n:2,fx:'plunder',tg:1,text:'相手の手札をランダムに1枚奪う'},
+  rebuild:{name:'立て直し',cat:'draw',n:2,fx:'rebuild',text:'手札が5枚になるまで引く'},
+  quick:{name:'疾風突き',cat:'atk',n:3,dmg:2,quick:1,text:'2ダメージ。使用枠を消費しない'},
+  rush:{name:'突進',cat:'atk',n:3,dmg:4,fx:'rush',text:'4ダメージ。相手に伏せた盾がなければ+2'},
+  breaker:{name:'盾砕き',cat:'atk',n:2,dmg:2,fx:'breaker',text:'相手の盾をすべて壊してから2ダメージ'},
+  execute:{name:'処刑',cat:'atk',n:2,dmg:3,fx:'execute',text:'3ダメージ。相手の体力が10以下なら+5'},
+  twin:{name:'二段斬り',cat:'atk',n:2,price:3,dmg:3,hits:2,solo:1,text:'3ダメージ×2回。このターンはこれ1枚だけ'},
+  flurry:{name:'乱れ打ち',cat:'atk',n:2,dmg:1,fx:'flurry',text:'1ダメージ×2〜5回（ランダム）'},
+  flameblade:{name:'炎の剣',cat:'atk',n:2,dmg:3,inflame:1,text:'3ダメージ＋炎症1ターン'},
+  smash:{name:'強打',cat:'atk',n:3,price:3,dmg:6,heavy:1,solo:1,text:'6ダメージ。このターンはこれ1枚だけ'},
+  combo:{name:'連撃',cat:'atk',n:3,dmg:2,hits:2,text:'2ダメージ×2回'},
+  triple:{name:'三連突き',cat:'atk',n:3,dmg:1,hits:3,text:'1ダメージ×3回。強化が1回ごとに乗る'},
+  pierce:{name:'貫き突き',cat:'atk',n:3,dmg:2,pierce:1,text:'2ダメージ。盾を無視'},
+  reckless:{name:'捨て身',cat:'atk',n:2,dmg:7,heavy:1,self:2,text:'7ダメージ。自分も2ダメージ'},
+  chase:{name:'追い打ち',cat:'atk',n:2,dmg:2,fx:'chase',text:'2ダメージ。相手が毒か炎症なら+3'},
+  rage:{name:'逆上',cat:'atk',n:2,dmg:2,fx:'rage',text:'2ダメージ。自分が失った体力5ごとに+1'},
+  fury:{name:'闘志',cat:'buff',n:3,atkUp:2,text:'このターンと次のターン、攻撃+2'},
+  allin:{name:'渾身',cat:'buff',n:2,fx:'allin',text:'次の攻撃カードのダメージ2倍'},
+  keen:{name:'鋭刃',cat:'buff',n:2,fx:'keen',text:'次の攻撃カードが盾を無視'},
+  whet:{name:'研ぎ澄まし',cat:'buff',n:2,fx:'whet',text:'次の攻撃カードは1回ごとに+2。連撃系と好相性'},
+  berserk:{name:'狂化',cat:'buff',n:1,fx:'berserk',text:'3ターン攻撃+3。そのあいだ受けるダメージ+1'},
+  shield:{name:'盾',cat:'def',n:8,fx:'shield',text:'伏せて設置。数値分ダメージを減らして壊れる'},
+  wall:{name:'鉄壁',cat:'def',n:2,fx:'wall',text:'次の攻撃1回を無効化。次の自分のターンは攻撃不可'},
+  counter:{name:'反撃の構え',cat:'def',n:2,fx:'counter',text:'伏せて設置。次に攻撃されたら相手に3ダメージ'},
+  thorns:{name:'茨の鎧',cat:'def',n:2,fx:'thorns',text:'2ラウンドの間、攻撃してきた相手に毎回1ダメージ'},
+  parry:{name:'受け流し',cat:'def',n:2,fx:'parry',text:'伏せて設置。次の攻撃ダメージの半分を相手に返す'},
+  barrier:{name:'結界',cat:'def',n:2,fx:'barrier',text:'2ラウンドの間、毒と炎症を受けない'},
+  needle:{name:'毒針',cat:'psn',n:3,poison:2,text:'毒+2'},
+  venomblade:{name:'毒の刃',cat:'psn',n:3,dmg:2,poison:2,poisonIfHit:1,text:'2ダメージ。盾を越えて当たれば毒+2'},
+  venomfang:{name:'毒牙連撃',cat:'psn',n:2,dmg:1,hits:2,poisonPerHit:1,text:'1ダメージ×2回。当たるたびに毒+1'},
+  delayed:{name:'遅効毒',cat:'psn',n:2,fx:'delayed',tg:1,text:'相手の3ターン後に毒+4が発動'},
+  detonate:{name:'毒爆',cat:'psn',n:2,fx:'detonate',tg:1,text:'相手の毒を全部消し、毒の数×2ダメージ（盾無視）'},
+  toxify:{name:'猛毒化',cat:'psn',n:2,fx:'toxify',text:'次に与える毒が2倍'},
+  ember:{name:'火種',cat:'fire',n:3,inflame:3,text:'炎症3ターン'},
+  burn:{name:'焼き払い',cat:'fire',n:3,fx:'burn',tg:1,text:'相手の盾を1枚壊し、炎症1ターン'},
+  spread:{name:'燃え広がり',cat:'fire',n:2,fx:'spread',tg:1,text:'炎症中なら+2ターン（でなければ炎症1）。ほかの相手全員にも炎症1'},
+  potion:{name:'回復薬',cat:'heal',n:3,heal:4,text:'体力+4'},
+  bigpotion:{name:'大回復',cat:'heal',n:1,heal:8,solo:1,text:'体力+8。このターンはこれ1枚だけ'},
+  regen:{name:'再生',cat:'heal',n:2,fx:'regen',text:'3ターンの間、ターン開始時に体力+2'},
+  vampire:{name:'吸血斬り',cat:'heal',n:2,dmg:3,lifesteal:1,text:'3ダメージ。与えたダメージ分回復'},
+  guts:{name:'根性',cat:'heal',n:2,fx:'guts',text:'次に倒れるダメージを受けても体力1で耐える'},
+  convert:{name:'毒転換',cat:'heal',n:1,fx:'convert',text:'自分の毒を消し、毒の数×2回復（毒がなければ+1）'},
+  prayer:{name:'祈り',cat:'heal',n:2,heal:3,mp:2,text:'体力+3、MP+2'},
+  antidote:{name:'解毒薬',cat:'cure',n:3,fx:'antidote',text:'自分の毒と遅効毒を消す'},
+  cool:{name:'冷却',cat:'cure',n:3,fx:'cool',text:'自分の炎症を消す'},
+  panacea:{name:'万能薬',cat:'cure',n:1,fx:'panacea',text:'状態異常と弱体をすべて消し、体力+2'},
+  meditate:{name:'瞑想',cat:'mp',n:3,mp:3,text:'MP+3'},
+  focus:{name:'気合い溜め',cat:'mp',n:2,mp:2,atkUp:1,text:'MP+2。このターンと次のターン、攻撃+1'},
+  manadrain:{name:'魔力吸収',cat:'mp',n:2,dmg:1,fx:'manadrain',text:'1ダメージ。相手のMPを2奪う'},
+  twinfang:{name:'双牙',cat:'skill',n:2,cost:3,dmg:3,hits:2,text:'3ダメージ×2回'},
+  hundred:{name:'百裂拳',cat:'skill',n:1,cost:4,dmg:1,hits:6,text:'1ダメージ×6回。強化が1回ごとに乗る'},
+  meteor:{name:'流星',cat:'skill',n:1,cost:5,dmg:8,pierce:1,text:'8ダメージ。盾を無視'},
+  hellfire:{name:'業火',cat:'skill',n:1,cost:4,dmg:4,inflame:3,text:'4ダメージ＋炎症3ターン'},
+  miasma:{name:'猛毒の霧',cat:'skill',n:1,cost:3,poison:3,aoe:1,text:'相手全員に毒+3'},
+  quake:{name:'大地震',cat:'skill',n:1,cost:5,dmg:4,pierce:1,aoe:1,text:'相手全員に4ダメージ（盾無視）'},
+  greatheal:{name:'大治癒',cat:'skill',n:1,cost:4,heal:10,text:'体力+10'},
+  peek:{name:'透視',cat:'magic',n:2,cost:1,fx:'peek',tg:1,text:'相手の手札と伏せ札を見る'},
+  alchemy:{name:'錬成',cat:'magic',n:2,cost:1,fx:'alchemy',text:'手札をすべて捨て、同じ枚数+1枚引く'},
+  confuse:{name:'混乱',cat:'magic',n:2,cost:2,fx:'confuse',tg:1,text:'相手の手札をランダムに2枚捨てさせる'},
+  curseback:{name:'呪い返し',cat:'magic',n:2,cost:3,fx:'curseback',tg:1,text:'自分の毒・炎症・弱体をすべて相手に移す'},
+  mirror:{name:'鏡像',cat:'magic',n:2,cost:3,fx:'mirror',text:'伏せて設置。次に受ける攻撃カードを相手に跳ね返す'},
+  balance:{name:'運命の天秤',cat:'magic',n:1,cost:5,fx:'balance',tg:1,text:'自分と相手の体力を平均にそろえる'},
+  burst:{name:'魔力爆発',cat:'magic',n:1,costAll:1,fx:'burst',tg:1,text:'MPを全部使い、使ったMPと同じダメージ（盾無視）'},
+  holysword:{name:'聖剣',cat:'atk',n:0,shopOnly:1,price:5,dmg:5,pierce:1,text:'5ダメージ。盾を無視'},
+  thousand:{name:'千本針',cat:'psn',n:0,shopOnly:1,price:4,poison:6,text:'毒+6'},
+  phoenix:{name:'不死鳥の羽',cat:'heal',n:0,shopOnly:1,price:5,fx:'phoenix',text:'倒れたとき、体力10で復活する'},
+  dragon:{name:'竜の血',cat:'buff',n:0,shopOnly:1,price:4,fx:'dragon',text:'最大体力+5、体力+5'},
+  timestop:{name:'時間停止',cat:'magic',n:0,shopOnly:1,price:4,cost:6,fx:'timestop',tg:1,text:'相手の次のターンを飛ばす'},
+  intimidate:{name:'威圧',cat:'debuff',n:3,fx:'intimidate',tg:1,text:'相手の次の2ターン、攻撃−2'},
+  disarm:{name:'武器破壊',cat:'debuff',n:2,fx:'disarm',tg:1,text:'相手の強化をすべて消し、次のターン攻撃−1'},
+  snare:{name:'足止め',cat:'debuff',n:2,fx:'snare',tg:1,text:'相手は次のターン1枚しか使えない'},
+  silence:{name:'魔封じ',cat:'debuff',n:1,fx:'silence',tg:1,text:'相手のMPを0にする'},
+  st_swamp:{name:'毒沼',cat:'stage',n:1,text:'毒ダメージ+1。解毒薬が使えない'},
+  st_volcano:{name:'火山',cat:'stage',n:1,text:'炎症が+1ターン長い。ターン開始時に全員1ダメージ'},
+  st_sanct:{name:'聖域',cat:'stage',n:1,text:'回復量2倍。強打・捨て身が使えない'},
+  st_fort:{name:'城塞',cat:'stage',n:1,text:'盾+1。強打・捨て身のダメージ−2'},
+  st_arena:{name:'闘技場',cat:'stage',n:1,text:'攻撃+1。盾−1'},
+  st_spring:{name:'魔力の泉',cat:'stage',n:1,text:'ターン開始時のMP回復+1。必殺の消費MP−1'},
+};
+for(const k in BASE)if(BASE[k].cat==='stage')BASE[k].quick=1;
+let CARDS={...BASE};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const store={get(){try{return JSON.parse(localStorage.getItem('duel.custom')||'[]')}catch(e){return[]}},set(v){try{localStorage.setItem('duel.custom',JSON.stringify(v))}catch(e){}}};
+const LV={easy:{n:'やさしい',r:1200},normal:{n:'ふつう',r:1500},hard:{n:'つよい',r:1800}};
+const rstore={def:()=>({rating:1500,games:0,wins:0,cpuRating:1500,cpuGames:0,cpuWins:0,hist:[]}),get(){try{const v=JSON.parse(localStorage.getItem('duel.rating'));if(!v)return this.def();if(v.r!=null)return{...this.def(),cpuRating:v.r,cpuGames:v.g,cpuWins:v.w,hist:(v.h||[])};if(v.cpuRating==null)return{...this.def(),cpuRating:v.rating??1500,cpuGames:v.games??0,cpuWins:v.wins??0,hist:v.hist||[]};return v}catch(e){return this.def()}},set(v){try{localStorage.setItem('duel.rating',JSON.stringify(v))}catch(e){}}};
+const tier=r=>r<1300?'ブロンズ':r<1500?'シルバー':r<1700?'ゴールド':r<1900?'プラチナ':'ダイヤモンド';
+let SIM=false;
+let G=null, UI={screen:'title',sel:null,catalog:false,peek:null,err:'',msg:'',result:null,waiting:false,peekClosed:null,watchOnly:false,cpuTimer:null,rating:rstore.get(),cfg:{useMine:true,useAll:false,vs:'cpu',diff:'normal',n:2,names:['あなた','プレイヤー2','プレイヤー3','プレイヤー4'],hp:30,hand:6,deckMode:'standard',deckSize:'set',custom:store.get()}};
+/* ---------- card art ---------- */
+const GLYPH={
+ sword:'<path d="M46 6h12v12L30 46l-12-12z"/><path d="M12 38l14 14-4 4-3-3-6 6-4-4 6-6-3-3z"/>',
+ swords:'<path d="M44 6h12v12L32 42l-10-10z"/><path d="M20 6H8v12l24 24 10-10z" opacity=".78"/><path d="M10 44l10 10-3 3-3-3-4 4-4-4 4-4-3-3zM54 44l-10 10 3 3 3-3 4 4 4-4-4-4 3-3z"/>',
+ fist:'<rect x="14" y="24" width="34" height="22" rx="8"/><rect x="16" y="14" width="8" height="14" rx="4"/><rect x="25" y="11" width="8" height="15" rx="4"/><rect x="34" y="11" width="8" height="15" rx="4"/><rect x="43" y="14" width="7" height="14" rx="3.5"/><rect x="20" y="44" width="22" height="12" rx="3"/>',
+ spear:'<path d="M48 4h12v12l-8 2L20 50l-6-6L46 12z"/><path d="M8 50l6 6-6 6-6-6z"/>',
+ burst:'<path d="M32 2l6 18 18-6-12 14 16 8-18 2 4 18-14-12-14 12 4-18-18-2 16-8L8 14l18 6z"/>',
+ shield:'<path d="M32 4l24 9v15c0 16-10 28-24 32C18 56 8 44 8 28V13z"/><path d="M32 12v40" stroke="rgba(0,0,0,.25)" stroke-width="4"/>',
+ wall:'<path d="M6 12h52v42H6z"/><path d="M6 26h52M6 40h52M20 12v14M44 12v14M32 26v14M14 40v14M50 40v14" stroke="rgba(0,0,0,.3)" stroke-width="3"/>',
+ thorns:'<path d="M6 40c16-5 36-5 52 0" stroke="#fff" stroke-width="5" fill="none"/><path d="M12 39l4-14 5 13zM27 37l5-15 5 15zM43 38l5-14 4 14zM19 42l4 14 5-13zM35 42l5 14 4-14z"/>',
+ mirror:'<ellipse cx="32" cy="25" rx="17" ry="21"/><rect x="29" y="44" width="6" height="16" rx="2"/><path d="M23 14l10 10M21 23l5 5" stroke="rgba(0,0,0,.3)" stroke-width="3"/>',
+ drop:'<path d="M32 4C24 18 12 28 12 40a20 20 0 0040 0C52 28 40 18 32 4z"/><circle cx="24" cy="40" r="5" fill="rgba(0,0,0,.25)"/>',
+ skull:'<path d="M32 6C18 6 9 15 9 28c0 8 4 14 9 16v10h28V44c5-2 9-8 9-16C55 15 46 6 32 6z"/><circle cx="23" cy="29" r="6" fill="rgba(0,0,0,.4)"/><circle cx="41" cy="29" r="6" fill="rgba(0,0,0,.4)"/><path d="M26 54v-7M32 54v-7M38 54v-7" stroke="rgba(0,0,0,.4)" stroke-width="2.5"/>',
+ flame:'<path d="M32 2c4 13 20 19 20 36a20 20 0 01-40 0c0-9 5-14 9-18 0 7 3 10 7 11-2-11 0-20 4-29z"/><path d="M32 33c2 6 9 8 9 15a9 9 0 01-18 0c0-5 5-8 9-15z" fill="rgba(0,0,0,.2)"/>',
+ heart:'<path d="M32 58L8 34C0 25 5 10 18 10c7 0 11 4 14 9 3-5 7-9 14-9 13 0 18 15 10 24z"/>',
+ flask:'<path d="M25 4h14v5h-2v13l15 24c3 6-1 12-7 12H19c-6 0-10-6-7-12l15-24V9h-2z"/><path d="M15 44h34l2 4c1 4-1 7-5 7H18c-4 0-6-3-5-7z" fill="rgba(0,0,0,.2)"/>',
+ leaf:'<path d="M54 6C26 6 8 22 10 48l-4 8 4 2 4-8c28 2 42-18 40-44z"/><path d="M14 50C24 36 34 26 48 14" stroke="rgba(0,0,0,.25)" stroke-width="3" fill="none"/>',
+ cross:'<path d="M23 6h18v17h17v18H41v17H23V41H6V23h17z"/>',
+ snow:'<path d="M30 2h4v60h-4zM2 30h60v4H2z"/><path d="M9 12l3-3 43 43-3 3zM9 52l43-43 3 3-43 43z"/><circle cx="32" cy="32" r="8"/>',
+ eye:'<path d="M2 32c9-13 19-20 30-20s21 7 30 20c-9 13-19 20-30 20S11 45 2 32z"/><circle cx="32" cy="32" r="11" fill="rgba(0,0,0,.4)"/><circle cx="32" cy="32" r="5"/>',
+ bolt:'<path d="M38 2L10 36h18l-6 26 30-36H34z"/>',
+ orb:'<circle cx="32" cy="32" r="24"/><circle cx="24" cy="24" r="8" fill="rgba(255,255,255,.45)"/><circle cx="32" cy="32" r="24" fill="none" stroke="rgba(0,0,0,.2)" stroke-width="3"/>',
+ book:'<path d="M6 10c9-2 18-2 25 3v44c-7-5-16-5-25-3zM58 10c-9-2-18-2-25 3v44c7-5 16-5 25-3z"/>',
+ cards:'<rect x="8" y="14" width="28" height="38" rx="4" transform="rotate(-12 22 33)"/><rect x="28" y="10" width="28" height="38" rx="4" transform="rotate(10 42 29)" opacity=".8"/>',
+ hourglass:'<path d="M12 4h40v7c0 11-13 15-13 21s13 10 13 21v7H12v-7c0-11 13-15 13-21S12 22 12 11z"/><path d="M21 53h22L32 42z" fill="rgba(0,0,0,.25)"/>',
+ scale:'<path d="M30 6h4v46h11v5H19v-5h11z"/><path d="M8 14h48v4H8z"/><path d="M12 18L4 36h16zM52 18l-8 18h16z"/><path d="M3 36a9 6 0 0018 0zM43 36a9 6 0 0018 0z"/>',
+ wind:'<path d="M4 20h36a8 8 0 10-8-8" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M4 34h48a8 8 0 11-8 8" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M4 48h24" stroke="#fff" stroke-width="6" stroke-linecap="round"/>',
+ meteor:'<circle cx="40" cy="40" r="16"/><path d="M4 4l28 24-7 7zM16 2l22 22-5 5zM2 16l22 22 5-5z" opacity=".7"/>',
+ hand:'<path d="M16 32V14a5 5 0 0110 0v14V9a5 5 0 0110 0v19V11a5 5 0 0110 0v19-8a5 5 0 0110 0v20c0 13-9 20-20 20-8 0-14-4-18-11l-8-12a5 5 0 017-6z"/>',
+ chain:'<rect x="4" y="21" width="28" height="22" rx="11" fill="none" stroke="#fff" stroke-width="7"/><rect x="32" y="21" width="28" height="22" rx="11" fill="none" stroke="#fff" stroke-width="7"/>',
+ down:'<path d="M23 4h18v28h13L32 60 10 32h13z"/>',
+ up:'<path d="M23 60h18V32h13L32 4 10 32h13z"/>',
+ feather:'<path d="M56 4C30 6 12 26 12 48l-6 10 4 2 6-10C42 50 56 30 56 4z"/><path d="M12 48L42 18" stroke="rgba(0,0,0,.25)" stroke-width="3"/>',
+ fang:'<path d="M6 8h52v9H6z"/><path d="M10 17l9 34 9-34zM36 17l9 34 9-34z"/>',
+ crown:'<path d="M6 18l13 13 13-22 13 22 13-13-7 36H13z"/>',
+ star:'<path d="M32 2l9 19 21 3-15 14 4 21-19-10-19 10 4-21L2 24l21-3z"/>',
+ swamp:'<path d="M2 44c9-5 15 4 23 0s15-5 23 0 14 4 14 0v18H2z"/><circle cx="19" cy="29" r="7"/><circle cx="36" cy="20" r="9"/><circle cx="49" cy="34" r="5"/>',
+ volcano:'<path d="M2 60l20-32h20l20 32z"/><path d="M25 28c-3-9 4-11 2-22 7 7 11 13 9 22z" opacity=".75"/>',
+ temple:'<path d="M32 2L2 20h60z"/><path d="M6 23h52v5H6zM11 28h7v22h-7zM28.5 28h7v22h-7zM46 28h7v22h-7zM4 50h56v9H4z"/>',
+ castle:'<path d="M4 12h9v7h6v-7h9v7h8v-7h9v7h6v-7h9v48H4z"/><path d="M25 60V45a7 7 0 0114 0v15z" fill="rgba(0,0,0,.3)"/>',
+ arena:'<ellipse cx="32" cy="40" rx="30" ry="17"/><ellipse cx="32" cy="40" rx="17" ry="8" fill="rgba(0,0,0,.3)"/><path d="M3 40V27M61 40V27M13 30V19M51 30V19M23 25V14M41 25V14M32 25V11" stroke="#fff" stroke-width="3.5"/>',
+ wave:'<path d="M2 40c9-9 17-9 26 0s17 9 26 0 8-4 8-4v24H2z"/><circle cx="32" cy="19" r="11"/>',
+};
+const ART={slash:'sword',kick:'fist',quick:'bolt',rush:'burst',breaker:'fist',execute:'skull',twin:'swords',flurry:'star',flameblade:'flame',whirl:'wind',joint:'swords',
+ smash:'fist',combo:'swords',triple:'spear',pierce:'spear',reckless:'burst',chase:'fang',rage:'burst',
+ fury:'up',allin:'star',keen:'sword',whet:'up',berserk:'skull',rally:'crown',
+ shield:'shield',wall:'wall',counter:'shield',thorns:'thorns',parry:'wind',barrier:'orb',
+ needle:'drop',venomblade:'sword',venomfang:'fang',delayed:'hourglass',detonate:'burst',toxify:'skull',thousand:'drop',
+ ember:'flame',burn:'flame',spread:'flame',firerain:'meteor',
+ potion:'flask',bigpotion:'flask',regen:'leaf',vampire:'fang',guts:'heart',convert:'drop',prayer:'star',phoenix:'feather',
+ antidote:'cross',cool:'snow',panacea:'cross',meditate:'orb',focus:'up',manadrain:'hand',
+ supply:'cards',spark:'bolt',council:'book',plunder:'hand',rebuild:'cards',
+ twinfang:'fang',hundred:'fist',meteor:'meteor',hellfire:'flame',miasma:'skull',greatheal:'heart',quake:'burst',
+ peek:'eye',alchemy:'flask',confuse:'star',curseback:'mirror',mirror:'mirror',balance:'scale',burst:'orb',timestop:'hourglass',
+ intimidate:'down',disarm:'down',snare:'chain',silence:'chain',holysword:'sword',dragon:'heart',
+ st_swamp:'swamp',st_volcano:'volcano',st_sanct:'temple',st_fort:'castle',st_arena:'arena',st_spring:'wave'};
+const CATART={atk:'sword',buff:'up',def:'shield',psn:'drop',fire:'flame',heal:'heart',cure:'cross',mp:'orb',draw:'cards',skill:'star',magic:'eye',debuff:'down',stage:'temple'};
+const artSvg=(k,d)=>`<svg viewBox="0 0 64 64" aria-hidden="true">${GLYPH[ART[k]||CATART[d.cat]]||GLYPH.star}</svg>`;
+const price=d=>d.price??PRICE[d.cat]??2;
+const SV=[2,2,3,3,3,4,4,4];
+let cid=100000;const mk=k=>{const c={id:cid++,k};if(k==='shield')c.v=SV[Math.floor(Math.random()*SV.length)];return c};
+function fillShop(){const pool=Object.keys(CARDS).filter(k=>{const d=CARDS[k];return d.shopOnly||(d.n>0&&!['stage','mp'].includes(d.cat))});
+  while(G.shop.length<3)G.shop.push(mk(pool[Math.floor(Math.random()*pool.length)]))}
+function installCustom(list){CARDS={...BASE};(list||[]).forEach(c=>{if(c&&c.key&&String(c.key).startsWith('cu_'))CARDS[c.key]={...c,custom:1}})}
+const needsTarget=d=>!d.aoe&&!!(d.tg||d.dmg>0||d.poison>0||d.inflame>0);
+const isAtk=d=>d.dmg>0;
+
+function buildDeck(cfg){
+  const keys=Object.keys(CARDS).filter(k=>CARDS[k].n>0);
+  const set=keys.flatMap(k=>Array(CARDS[k].n).fill(k));
+  const size=cfg.deckSize==='set'?set.length:+cfg.deckSize;
+  let list=[],types=keys.length;
+  if(cfg.deckMode==='random'){
+    const byCat={};keys.forEach(k=>(byCat[CARDS[k].cat]??=[]).push(k));
+    const chosen=[];
+    for(const cat in byCat){const arr=shuffle(byCat[cat].slice());const take=Math.max(1,Math.round(arr.length*(0.4+Math.random()*0.4)));chosen.push(...arr.slice(0,take))}
+    types=chosen.length;list=chosen.slice();
+    const w=chosen.flatMap(k=>Array(CARDS[k].n).fill(k));
+    while(list.length<size)list.push(w[Math.floor(Math.random()*w.length)]);
+  }else{while(list.length<size)list.push(...shuffle(set.slice()));list=list.slice(0,size)}
+  return{deck:shuffle(list.map(mk)),types}}
+function newPlayer(name,hp){return{name,hp,max:hp,mp:5,rally:false,alive:true,hand:[],shields:[],counter:false,parry:false,wall:false,thorns:0,barrier:0,
+  poison:0,delayed:[],inflame:0,regen:0,buffs:[],debuffs:[],allin:false,keen:false,whet:false,toxify:false,guts:false,phoenix:false,mirror:false,skip:false,vuln:0,noAttack:false,pendingNoAttack:false,snared:false}}
+function newGame(cfg){
+  installCustom(cfg.custom);UI.result=null;UI.waiting=false;
+  const bd=buildDeck(cfg);
+  const vc=cfg.vs==='cpu';
+  const players=cfg.names.slice(0,cfg.n).map((n,i)=>{if(vc&&i>0){const p=newPlayer(`CPU${cfg.n>2?i:''}（${LV[cfg.diff].n}）`,cfg.hp);p.cpu=true;p.diff=cfg.diff;return p}return newPlayer(n||'名無し',cfg.hp)});
+  if(UI.cpuTimer){clearTimeout(UI.cpuTimer);UI.cpuTimer=null}
+  G={cfg:JSON.parse(JSON.stringify(cfg)),players,deck:bd.deck,stage:null,cur:0,out:[],cpuN:0,ratingDelta:null,winnerSeat:null,seq:0,peek:null,net:null,turnStart:Date.now(),
+     played:0,maxPlays:2,discarded:false,bought:false,shop:[],turn:1,log:[],notes:[],start:Date.now(),end:null,sudden:false,phase:'pass',over:null};
+  fillShop();UI.peek=null;
+  G.players.forEach(p=>{for(let i=0;i<cfg.hand;i++)draw(p)});
+  const nc=(cfg.custom||[]).filter(c=>CARDS[c.key]).length;
+  log(`ゲーム開始（${G.players.length}人・体力${cfg.hp}・手札${cfg.hand}枚・山札${G.deck.length+G.players.length*cfg.hand}枚・${cfg.deckMode==='random'?'ランダム山札':'標準山札'} ${bd.types}種類${nc?`・自作カード${nc}種`:''}）`);
+  beginTurn();
+}
+const cur=()=>G.players[G.cur];
+function log(m){G.log.push(m);if(G.log.length>150)G.log.shift();G.notes.push(m)}
+function draw(p){if(!G.deck.length){if(!G.sudden){G.sudden=true;log('山札が尽きた。サドンデス開始（毎ターン2ダメージ）')}return false}p.hand.push(G.deck.pop());return true}
+function hurt(p,n,src){if(n<=0||!p.alive)return;p.hp-=n;log(`${p.name}に${n}ダメージ（${src}）`)}
+function heal(p,n,src){if(G.stage==='st_sanct')n*=2;const b=p.hp;p.hp=Math.min(p.max,p.hp+n);log(`${p.name}の体力+${p.hp-b}（${src}）`)}
+function gainMp(p,n){const b=p.mp;p.mp=Math.max(0,Math.min(MPMAX,p.mp+n));return p.mp-b}
+const effCost=d=>d.cost?Math.max(1,d.cost-(G&&G.stage==='st_spring'?1:0)):0;
+function neighbors(i){return G.players.map((_,j)=>j).filter(j=>j!==i&&G.players[j].alive)}
+function checkDeaths(){
+  G.players.forEach(p=>{if(p.alive&&p.hp<=0){if(p.guts){p.guts=false;p.hp=1;log(`${p.name}は根性で踏みとどまった（体力1）`)}else if(p.phoenix){p.phoenix=false;p.hp=Math.min(p.max,10);log(`${p.name}は不死鳥の羽で復活した（体力${p.hp}）`)}else{p.alive=false;p.hp=0;G.out.push(G.players.indexOf(p));log(`${p.name}が倒れた`)}}});
+  const alive=G.players.filter(p=>p.alive);
+  if(!G.over&&(alive.length<=1||(G.cfg.vs==='cpu'&&!G.players[0].alive))){
+    const w=alive.length?alive.slice().sort((a,b)=>b.hp-a.hp)[0]:null;
+    G.over=w?w.name:'引き分け';G.winnerSeat=w?G.players.indexOf(w):-1;G.end=Date.now();G.phase='over';
+    if(!SIM&&G.cfg.vs==='cpu'&&G.cfg.rated)applyRating()}
+  return !!G.over}
+function applyRating(){
+  const R=getStats('cpu'),won=G.winnerSeat===0,draw=G.winnerSeat===-1;
+  const cpus=G.players.map((_,j)=>j).filter(j=>G.players[j].cpu);let sum=0;
+  const E=1/(1+10**((LV[G.cfg.diff].r-R.rating)/400));
+  cpus.forEach(j=>{let S;if(draw)S=.5;else if(won)S=1;else{const hi=G.out.indexOf(0),ci=G.out.indexOf(j);S=ci===-1?0:(hi===-1||hi>ci)?1:0}sum+=S-E});
+  recordResult('cpu',Math.round(32*sum/Math.max(1,cpus.length)),won?'勝ち':draw?'引き分け':'負け','CPU '+LV[G.cfg.diff].n,null)}
+/* ---------- stats (rating) — online と cpu を別々に持つ ---------- */
+const KF={online:['rating','games','wins'],cpu:['cpuRating','cpuGames','cpuWins']};
+const KIND_NAME={online:'オンライン',cpu:'CPU'};
+function statSrc(){return(typeof NET!=='undefined'&&NET.db&&NET.uid&&NET.me)?NET.me:UI.rating}
+function getStats(kind){const s=statSrc(),[r,g,w]=KF[kind||'online'];
+  return{rating:s[r]??1500,games:s[g]??0,wins:s[w]??0,hist:(s.hist||[]).slice()}}
+function recordResult(kind,delta,res,label,mid){
+  const s=getStats(kind),[r,g,w]=KF[kind];s.rating+=delta;s.games++;if(res==='勝ち')s.wins++;
+  s.hist.unshift({d:delta,res,lv:label,mid:mid||null,k:kind});s.hist=s.hist.slice(0,10);
+  const patch={[r]:s.rating,[g]:s.games,[w]:s.wins,hist:s.hist};
+  UI.result={delta,after:s.rating,kind};
+  if(statSrc()!==UI.rating){NET.me={...NET.me,...patch};NET.db.doc('players/'+NET.uid).update({...patch,updated:Date.now()}).catch(()=>{})}
+  else{UI.rating={...UI.rating,...patch};rstore.set(UI.rating)}}
+/* ---------- CPU ---------- */
+function evalState(me){
+  const p=G.players[me];if(!p.alive||p.hp<=0)return -1e5;
+  if(G.over&&G.over===p.name)return 1e5;
+  const sumB=a=>a.reduce((s,b)=>s+b.amt*b.t,0);
+  let s=p.hp*1.0+p.mp*0.25+p.shields.reduce((a,v)=>a+v,0)*0.6+(p.counter?1.5:0)+(p.parry?1.5:0)+(p.mirror?2:0)+(p.wall?3:0)
+    +p.thorns*0.8+p.barrier*0.8+(p.guts?3:0)+(p.phoenix?6:0)+p.regen*1.5+sumB(p.buffs)*0.5+(p.allin?2:0)+(p.keen?1:0)+(p.whet?1.5:0)
+    +(p.rally?1.5:0)+(p.toxify?1:0)-p.poison*1.5-p.delayed.length*3-p.inflame*1-sumB(p.debuffs)*0.5+p.hand.length*0.6+(p.max-30)*0.5;
+  G.players.forEach((o,j)=>{if(j===me)return;if(!o.alive||o.hp<=0){s+=40;return}
+    s-=o.hp*1.2-o.poison*1.5-o.delayed.length*3-o.inflame*1.2+o.shields.reduce((a,v)=>a+v,0)*0.5+o.mp*0.15+o.hand.length*0.3-(o.skip?6:0)-(o.snared?2:0)-sumB(o.debuffs)*0.5});
+  return s}
+function cpuActions(){const p=cur(),acts=[];
+  p.hand.forEach((c,i)=>{if(whyNot(c))return;const d=CARDS[c.k];
+    const tg=(d.aoe||(isAtk(d)&&p.rally)||!needsTarget(d))?[null]:neighbors(G.cur);tg.forEach(t=>acts.push({i,t}))});
+  return acts}
+function simValue(a,me,depth){
+  const snap=JSON.stringify(G),us=UI.sel,up=UI.peek,was=SIM;SIM=true;
+  try{play(a.i,a.t)}catch(e){}
+  let v=evalState(me);
+  if(depth>0&&!G.over&&G.played<G.maxPlays){cpuActions().forEach(b=>{const v2=simValue(b,me,0);if(v2>v)v=v2})}
+  G=JSON.parse(snap);UI.sel=us;UI.peek=up;SIM=was;return v}
+function cpuChoose(){
+  const me=G.cur,lvl=cur().diff,acts=cpuActions();if(!acts.length)return null;
+  if(lvl==='easy'&&Math.random()<.4)return acts[Math.floor(Math.random()*acts.length)];
+  let best=null,bv=evalState(me)+0.3;
+  acts.forEach(a=>{let v=simValue(a,me,lvl==='hard'?1:0);if(lvl==='easy')v+=Math.random()*6-3;if(v>bv){bv=v;best=a}});
+  return best}
+function doBuy(i){const p=cur(),c=G.shop.splice(i,1)[0],d=CARDS[c.k];p.mp-=price(d);p.hand.push(c);G.bought=true;log(`${p.name}はショップで「${d.name}」を買った（MP${price(d)}）`);fillShop()}
+function cpuBuy(){
+  const me=G.cur,lvl=cur().diff;const ok=[0,1,2].filter(i=>!whyNotBuy(i));if(!ok.length)return;
+  if(lvl==='easy'){if(Math.random()<.35)doBuy(ok[Math.floor(Math.random()*ok.length)]);return}
+  const bestPlay=()=>{let v=evalState(me);cpuActions().forEach(a=>{const x=simValue(a,me,0);if(x>v)v=x});return v};
+  const base=bestPlay();let pick=-1,pv=base+0.8;
+  ok.forEach(i=>{const snap=JSON.stringify(G);SIM=true;doBuy(i);const v=bestPlay();G=JSON.parse(snap);SIM=false;if(v>pv){pv=v;pick=i}});
+  if(pick>=0)doBuy(pick)}
+function cpuStep(){
+  const p=cur();if(!p.cpu||G.over)return;
+  G.cpuN++;if(G.cpuN===1)cpuBuy();
+  const a=G.cpuN<=8?cpuChoose():null;
+  if(a)play(a.i,a.t);else advance()}
+function scheduleCpu(){if(G&&!G.over&&cur().cpu&&!UI.cpuTimer&&!UI.catalog){UI.cpuTimer=setTimeout(()=>{UI.cpuTimer=null;if(!G||G.over||!cur().cpu)return;cpuStep();render()},G.cpuN?700:1000)}}
+function beginTurn(){
+  G.notes=[];const p=cur();
+  p.delayed.forEach(d=>d.t--);
+  p.delayed.filter(d=>d.t<=0).forEach(d=>{p.poison+=d.amt;log(`${p.name}の遅効毒が発動。毒+${d.amt}`)});
+  p.delayed=p.delayed.filter(d=>d.t>0);
+  if(p.poison>0){hurt(p,p.poison+(G.stage==='st_swamp'?1:0),'毒');p.poison--}
+  if(G.stage==='st_volcano')hurt(p,1,'火山');
+  if(G.sudden)hurt(p,2,'サドンデス');
+  if(p.regen>0&&p.hp>0){heal(p,2,'再生');p.regen--}
+  if(p.thorns>0)p.thorns--; if(p.barrier>0)p.barrier--;
+  gainMp(p,G.stage==='st_spring'?3:2);
+  p.noAttack=p.pendingNoAttack;p.pendingNoAttack=false;
+  G.maxPlays=p.snared?1:2;p.snared=false;G.played=0;G.discarded=false;G.bought=false;G.lastCat=null;G.peek=null;G.turnStart=Date.now();
+  if(p.hand.length<HANDMAX)draw(p);
+  if(checkDeaths())return;
+  if(!p.alive){advance();return}
+  if(p.skip){p.skip=false;log(`${p.name}の時間が止まっている。ターンを飛ばす`);advance();return}
+  G.cpuN=0;
+  UI.sel=null;G.phase=G.cfg.vs==='hot'?'pass':'play';
+}
+function advance(){
+  const p=cur();
+  if(p.inflame>0)p.inflame--; if(p.vuln>0)p.vuln--;
+  p.buffs=p.buffs.map(b=>({...b,t:b.t-1})).filter(b=>b.t>0);
+  p.debuffs=p.debuffs.map(b=>({...b,t:b.t-1})).filter(b=>b.t>0);
+  const n=G.players.length;let j=G.cur;
+  for(let s=1;s<=n;s++){j=(G.cur+s)%n;if(G.players[j].alive)break}
+  G.cur=j;G.turn++;beginTurn();
+}
+function atkMod(a){return a.buffs.reduce((s,b)=>s+b.amt,0)-a.debuffs.reduce((s,b)=>s+b.amt,0)+(G.stage==='st_arena'?1:0)}
+function attack(a,t,base,o={}){
+  let d=base+atkMod(a)+(o.whet?2:0);if(o.heavy&&G.stage==='st_fort')d-=2;if(o.double)d*=2;d=Math.max(0,d);
+  if(t.wall){t.wall=false;log(`${t.name}の鉄壁が攻撃を完全に防いだ`);return 0}
+  if(t.inflame>0)d+=2; if(t.vuln>0)d+=1;
+  if(!o.pierce&&t.shields.length){const s=t.shields.shift();const v=Math.max(0,s+(G.stage==='st_fort'?1:0)-(G.stage==='st_arena'?1:0));d=Math.max(0,d-v);log(`${t.name}の盾(${s})が${v}軽減して壊れた`)}
+  if(t.parry&&d>0){t.parry=false;const back=Math.floor(d/2);d-=back;log(`${t.name}の受け流し`);hurt(a,back,'受け流し')}
+  if(d>0)hurt(t,d,'攻撃');else log(`${t.name}はダメージを受けなかった`);
+  if(t.counter){t.counter=false;log(`${t.name}の反撃の構え`);hurt(a,3,'反撃')}
+  if(t.thorns>0)hurt(a,1,'茨の鎧');
+  return d}
+function poisonT(src,t,n){if(src&&src.toxify){n*=2;src.toxify=false}if(t.barrier>0){log(`${t.name}の結界が毒を防いだ`);return}t.poison+=n;log(`${t.name}に毒+${n}`)}
+function inflameT(t,n,add){if(t.barrier>0){log(`${t.name}の結界が炎症を防いだ`);return}
+  if(G.stage==='st_volcano'&&!add)n+=1;t.inflame=add?t.inflame+n:Math.max(t.inflame,n);log(`${t.name}は炎症（残り${t.inflame}）`)}
+const hasStatus=t=>t.poison>0||t.inflame>0||t.delayed.length>0;
+function whyNot(c){
+  const p=cur(),d=CARDS[c.k];
+  if(G.played>=G.maxPlays&&!d.quick)return 'このターンはもうカードを使えません';
+  if(d.solo&&G.played>0)return `${d.name}はターン最初の1枚としてしか使えません`;
+  if(d.cost&&p.mp<effCost(d))return `MPが足りません（必要${effCost(d)}・今${p.mp}）`;
+  if(d.costAll&&p.mp<1)return 'MPが0なので使えません';
+  if(isAtk(d)&&p.noAttack)return '鉄壁の反動で、このターンは攻撃できません';
+  if(G.stage==='st_sanct'&&(c.k==='smash'||c.k==='reckless'))return '聖域では使えません';
+  if(G.stage==='st_swamp'&&c.k==='antidote')return '毒沼では解毒薬が効きません';
+  if(d.cat==='stage'&&G.stage===c.k)return 'すでにこのステージです';
+  return ''}
+function showStage(k){const d=CARDS[k];const el=document.createElement('div');el.className='toast';
+  el.innerHTML=`<div>${esc(d.name)}<small>${esc(d.text)}</small></div>`;document.body.appendChild(el);setTimeout(()=>el.remove(),1900)}
+const catKey=d=>isAtk(d)?'atk':d.cat;
+const COMBOS=[
+  {name:'連携攻撃',from:['atk'],to:'atk',dmg:2,text:'攻撃 → 攻撃：追加2ダメージ（盾無視）'},
+  {name:'爆炎撃',from:['fire'],to:'atk',dmg:3,text:'炎症 → 攻撃：追加3ダメージ（盾無視）'},
+  {name:'毒撃',from:['psn'],to:'atk',poison:2,text:'毒 → 攻撃：毒+2'},
+  {name:'魔法剣',from:['magic','skill'],to:'atk',dmg:2,mp:2,text:'魔法・必殺 → 攻撃：追加2ダメージ、MP+2'},
+  {name:'崩し打ち',from:['debuff'],to:'atk',dmg:3,text:'弱体 → 攻撃：追加3ダメージ（盾無視）'},
+  {name:'盾撃',from:['def'],to:'atk',shieldDmg:2,text:'防御 → 攻撃：自分の伏せ札1枚につき2ダメージ'},
+  {name:'気合いの連鎖',from:['buff','mp','draw'],to:'atk',dmg:2,text:'強化・MP・ドロー → 攻撃：追加2ダメージ'},
+  {name:'癒しの連鎖',from:['heal','cure'],to:'heal',heal:3,text:'回復・治療 → 回復・治療：体力+3'},
+];
+function findCombo(d){if(!G.lastCat)return null;const k=catKey(d);const to=k==='atk'?'atk':(k==='heal'||k==='cure')?'heal':null;
+  return to?COMBOS.find(c=>c.to===to&&c.from.includes(G.lastCat))||null:null}
+function applyCombo(p,cb,d,tl){const m=d.comboX2?2:1;log(`合わせ技「${cb.name}」${m>1?'（2倍）':''}！`);
+  const f=p.shields.length+(p.counter?1:0)+(p.parry?1:0)+(p.mirror?1:0);
+  tl.filter(t=>t.alive&&t.hp>0).forEach(t=>{if(cb.dmg)hurt(t,cb.dmg*m,cb.name);if(cb.poison)poisonT(p,t,cb.poison*m);if(cb.shieldDmg&&f)hurt(t,f*cb.shieldDmg*m,cb.name)});
+  if(cb.mp)gainMp(p,cb.mp*m);if(cb.heal)heal(p,cb.heal*m,cb.name)}
+function hitOn(p,t,d,o){let total=0;
+  if(isAtk(d)){
+    let base=d.dmg;
+    if(d.fx==='chase'&&hasStatus(t))base+=3;
+    if(d.fx==='rage')base+=Math.floor((p.max-p.hp)/5);
+    if(d.fx==='rush'&&!t.shields.length)base+=2;
+    if(d.fx==='execute'&&t.hp<=10)base+=5;
+    if(d.fx==='breaker'&&t.shields.length){log(`${t.name}の盾${t.shields.length}枚を砕いた`);t.shields=[]}
+    const hits=d.fx==='flurry'?2+Math.floor(Math.random()*4):(d.hits||1);
+    if(d.fx==='flurry')log(`乱れ打ちは${hits}回`);
+    for(let h=0;h<hits;h++){if(!t.alive||t.hp<=0||!p.alive||p.hp<=0)break;const got=attack(p,t,base,o);total+=got;if(d.poisonPerHit&&got>0)poisonT(p,t,d.poisonPerHit)}
+  }
+  if(d.poison&&(!d.poisonIfHit||total>0))poisonT(p,t,d.poison);
+  if(d.inflame)inflameT(t,d.inflame);
+  return total}
+function drawN(p,n){let k=0;for(let i=0;i<n;i++){if(p.hand.length>=HANDMAX)break;if(draw(p))k++}if(k)log(`${p.name}は${k}枚引いた`)}
+function play(idx,ti){
+  const p=cur(),c=p.hand[idx],d=CARDS[c.k];if(!c||whyNot(c))return;
+  const combo=findCombo(d);
+  p.hand.splice(idx,1);if(!d.quick)G.played++;if(d.solo)G.played=G.maxPlays;
+  let t=ti!=null?G.players[ti]:null;
+  const aoe=!!(d.aoe||(isAtk(d)&&p.rally));
+  log(`${p.name}：「${d.name}」${aoe?'→ 相手全員':t?'→ '+t.name:''}`);
+  if(isAtk(d)&&p.rally){p.rally=false;if(!d.aoe)log('号令で全体攻撃になった')}
+  if(d.cost){p.mp-=effCost(d)}
+  let spent=0;if(d.costAll){spent=p.mp;p.mp=0}
+  let total=0;const hitList=[];
+  const tl=aoe?neighbors(G.cur).map(j=>G.players[j]):(t?[t]:[]);
+  let o={};if(isAtk(d)){o={double:p.allin,pierce:p.keen||d.pierce,whet:p.whet,heavy:d.heavy};p.allin=p.keen=p.whet=false}
+  tl.forEach(tt=>{if(isAtk(d)&&tt!==p&&tt.mirror){tt.mirror=false;log(`${tt.name}の鏡像が攻撃を跳ね返した`);tt=p}
+    if(!aoe)t=tt;hitList.push(tt);total+=hitOn(p,tt,d,o)});
+  if(d.lifesteal&&total>0)heal(p,total,d.name);
+  if(d.heal)heal(p,d.heal,d.name);
+  if(d.shieldVal)p.shields.push(d.shieldVal);
+  if(d.mp){const g=gainMp(p,d.mp);log(`${p.name}のMP+${g}`)}
+  if(d.atkUp)p.buffs.push({amt:d.atkUp,t:2});
+  if(d.self)hurt(p,d.self,'反動');
+  if(d.draw)drawN(p,d.draw);
+  // special part
+  switch(d.fx){
+    case'allin':p.allin=true;break; case'keen':p.keen=true;break; case'whet':p.whet=true;break;
+    case'berserk':p.buffs.push({amt:3,t:3});p.vuln=3;break;
+    case'shield':p.shields.push(c.v);break;
+    case'wall':p.wall=true;p.pendingNoAttack=true;break;
+    case'counter':p.counter=true;break; case'thorns':p.thorns=2;break; case'parry':p.parry=true;break; case'barrier':p.barrier=2;break;
+    case'delayed':if(t.barrier>0)log(`${t.name}の結界が毒を防いだ`);else{t.delayed.push({t:3,amt:p.toxify?8:4});p.toxify=false;log(`${t.name}に遅効毒を仕込んだ`)}break;
+    case'detonate':if(t.poison>0){const n=t.poison;t.poison=0;hurt(t,n*2,'毒爆')}else log(`${t.name}は毒がなく、毒爆は不発`);break;
+    case'toxify':p.toxify=true;break;
+    case'burn':if(t.shields.length){const s=t.shields.shift();log(`${t.name}の盾(${s})を焼き払った`)}inflameT(t,1);break;
+    case'spread':{if(t.inflame>0)inflameT(t,2,true);else inflameT(t,1);
+      neighbors(G.cur).filter(j=>j!==ti).forEach(j=>inflameT(G.players[j],1));break}
+    case'rally':p.rally=true;break;
+    case'plunder':if(t.hand.length&&p.hand.length<HANDMAX){const c2=t.hand.splice(Math.floor(Math.random()*t.hand.length),1)[0];p.hand.push(c2);log(`${p.name}は${t.name}から手札を1枚奪った`)}else log('奪える手札がなかった');break;
+    case'rebuild':{const need=Math.max(0,5-p.hand.length);drawN(p,need);break}
+    case'regen':p.regen=3;break;
+    case'guts':p.guts=true;break;
+    case'convert':{const n=p.poison;p.poison=0;p.delayed=[];heal(p,n?n*2:1,'毒転換');break}
+    case'antidote':p.poison=0;p.delayed=[];log(`${p.name}の毒が消えた`);break;
+    case'cool':p.inflame=0;log(`${p.name}の炎症が消えた`);break;
+    case'panacea':p.poison=0;p.delayed=[];p.inflame=0;p.debuffs=[];p.noAttack=false;log(`${p.name}の状態異常と弱体が消えた`);heal(p,2,'万能薬');break;
+    case'manadrain':{const s=Math.min(2,t.mp);t.mp-=s;gainMp(p,s);log(`${p.name}が${t.name}のMPを${s}奪った`);break}
+    case'intimidate':t.debuffs.push({amt:2,t:2});break;
+    case'disarm':t.buffs=[];t.allin=t.keen=t.whet=false;t.debuffs.push({amt:1,t:1});log(`${t.name}の強化が消えた`);break;
+    case'snare':t.snared=true;break;
+    case'silence':t.mp=0;log(`${t.name}のMPが0になった`);break;
+    case'peek':G.peek={by:G.cur,t:ti,n:G.turn};break;
+    case'alchemy':{const n=p.hand.length;p.hand=[];for(let i=0;i<n+1;i++)draw(p);log(`${p.name}は手札を${n}枚捨てて${p.hand.length}枚引いた`);break}
+    case'confuse':for(let i=0;i<2&&t.hand.length;i++){const c2=t.hand.splice(Math.floor(Math.random()*t.hand.length),1)[0];log(`${t.name}は「${CARDS[c2.k].name}」を落とした`)}break;
+    case'curseback':t.poison+=p.poison;t.delayed.push(...p.delayed);t.inflame=Math.max(t.inflame,p.inflame);t.debuffs.push(...p.debuffs);
+      p.poison=0;p.delayed=[];p.inflame=0;p.debuffs=[];log(`${p.name}の呪いが${t.name}に移った`);break;
+    case'mirror':p.mirror=true;break;
+    case'balance':{const a=Math.ceil((p.hp+t.hp)/2);p.hp=Math.min(p.max,a);t.hp=Math.min(t.max,a);log(`天秤が傾いた。${p.name}と${t.name}の体力が${a}に`);break}
+    case'burst':hurt(t,spent,`魔力爆発 MP${spent}`);break;
+    case'timestop':t.skip=true;log(`${t.name}の次のターンが止まる`);break;
+    case'phoenix':p.phoenix=true;break;
+    case'dragon':p.max+=5;p.hp+=5;log(`${p.name}の最大体力+5、体力+5`);break;
+  }
+  if(d.cat==='stage'){G.stage=c.k;log(`ステージが「${d.name}」に変わった`);if(!SIM){document.body.dataset.stage=c.k;showStage(c.k)}}
+  if(combo&&p.alive&&p.hp>0)applyCombo(p,combo,d,aoe?hitList:(t?[t]:[]));
+  if(d.cat!=='stage')G.lastCat=catKey(d);
+  UI.sel=null;checkDeaths();
+}
+
+/* ---------- render helpers ---------- */
+const fmt=ms=>{const s=Math.max(0,Math.floor(ms/1000));return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`};
+function chip(t,cat,cls=''){return `<span class="chip ${cls}" data-cat="${cat}">${esc(t)}</span>`}
+function chips(p,self){const r=[];
+  if(p.poison>0)r.push(chip(`毒 ${p.poison}`,'psn'));
+  p.delayed.forEach(d=>r.push(chip(`遅効毒 あと${d.t}`,'psn')));
+  if(p.inflame>0)r.push(chip(`炎症 ${p.inflame}`,'fire'));
+  if(p.regen>0)r.push(chip(`再生 ${p.regen}`,'heal'));if(p.guts)r.push(chip('根性','heal'));if(p.phoenix)r.push(chip('不死鳥','heal'));if(p.skip)r.push(chip('時間停止','magic'));
+  const b=p.buffs.reduce((s,x)=>s+x.amt,0),db=p.debuffs.reduce((s,x)=>s+x.amt,0);
+  if(b)r.push(chip(`攻撃+${b}`,'buff'));if(db)r.push(chip(`攻撃−${db}`,'debuff'));
+  if(p.allin)r.push(chip('渾身','buff'));if(p.keen)r.push(chip('鋭刃','buff'));if(p.whet)r.push(chip('研ぎ澄まし','buff'));if(p.rally)r.push(chip('号令','buff'));
+  if(p.vuln>0)r.push(chip(`狂化 ${p.vuln}`,'atk'));if(p.toxify)r.push(chip('猛毒化','psn'));
+  if(p.wall)r.push(chip('鉄壁','def'));if(p.thorns>0)r.push(chip(`茨 ${p.thorns}`,'def'));if(p.barrier>0)r.push(chip(`結界 ${p.barrier}`,'def'));
+  if(p.snared)r.push(chip('足止め','debuff'));if(p.noAttack||p.pendingNoAttack)r.push(chip('攻撃不可','debuff'));
+  if(self){p.shields.forEach(v=>r.push(chip(`盾 ${v}`,'def','hidden')));if(p.counter)r.push(chip('反撃の構え','def','hidden'));if(p.parry)r.push(chip('受け流し','def','hidden'));if(p.mirror)r.push(chip('鏡像','magic','hidden'))}
+  else{const f=p.shields.length+(p.counter?1:0)+(p.parry?1:0)+(p.mirror?1:0);if(f)r.push(chip(`伏せ札 ×${f}`,'def','hidden'))}
+  return r.join('')||'<span class="sub">状態なし</span>'}
+function bars(p){const w=Math.max(0,p.hp)/p.max*100;
+  return `<div class="hp"><span class="lb">HP</span><div class="bar"><i class="${w<=30?'low':''}" style="width:${w}%"></i></div><span class="num">${Math.max(0,p.hp)} / ${p.max}</span></div>
+  <div class="hp"><span class="lb">MP</span><div class="bar mp"><i style="width:${p.mp/MPMAX*100}%"></i></div><span class="num">${p.mp} / ${MPMAX}</span></div>`}
+function cardHtml(c,extra='',attrs='',dd){const d=dd||CARDS[c.k]||{name:'？',cat:'atk',text:''};const cost=d.cost?(G?effCost(d):d.cost):0;
+  return `<button class="card ${extra}" data-cat="${d.cat}" ${attrs}><span class="band"><span>${CATS[d.cat]||''}</span>${cost?`<span class="cost">MP ${cost}</span>`:d.costAll?'<span class="cost">MP 全部</span>':''}</span>${hasArt(c.k)?`<span class="art pic art-${c.k}"></span>`:`<span class="art">${artSvg(c.k,d)}</span>`}${c.v?`<span class="val">${c.v}</span>`:''}<span class="nm">${esc(d.name)}</span><span class="tx">${esc(d.text)}</span>${d.custom?'<span class="mine">自作</span>':''}${d.shopOnly?'<span class="rare">ショップ限定</span>':''}</button>`}
+const avatar=icon=>`<span class="av"><svg viewBox="0 0 64 64" aria-hidden="true">${GLYPH[icon]||GLYPH.sword}</svg></span>`;
+function whyNotBuy(i){const p=cur(),c=G.shop[i];if(!c)return 'なし';const d=CARDS[c.k];
+  if(G.bought)return 'このターンはもう買いました';if(p.mp<price(d))return 'MP不足';return ''}
+function shopHtml(){const my=isHumanTurn(),p=cur();
+  return `<section class="shop"><div class="shop-h"><h3>カードショップ</h3><span class="sub">MPで1ターンに1枚買える。買ったカードは手札に入る</span>
+    <button class="btn small" data-act="reroll" ${p.mp<1||!my?'disabled':''}>品ぞろえを入れ替える（MP1）</button></div>
+    <div class="shop-row">${G.shop.map((c,i)=>{const w=my?whyNotBuy(i):'相手の番',pr=price(CARDS[c.k]||{});return `<div class="shop-item">${cardHtml(c,'','tabindex="-1"')}
+      <button class="btn ${w?'':'primary'} small" data-act="buy" data-i="${i}" ${w?'disabled':''}>MP ${pr} で買う${w?`（${w}）`:''}</button></div>`}).join('')}</div></section>`}
+
+/* ---------- online ---------- */
+const TURN_SEC=60;
+const FIXED={n:2,hp:30,hand:6,deckMode:'standard',deckSize:'set',custom:[]};
+const ICONS=['sword','shield','flame','drop','heart','star','bolt','orb','crown','skull','feather','eye','fang','leaf','meteor','wave'];
+const NET={off:false,ready:false,db:null,user:null,room:null,uid:null,me:null,meLoaded:false,peers:[],allCards:{},players:{},ranking:[],
+  queue:false,qSince:0,matchId:null,seat:null,isHost:false,mroom:null,unsubMatch:null,writing:false,pending:false,oppSeen:0,oppPeer:null,joinWait:null,
+  spectating:false,unsubWatch:null,matches:[],watchListOn:false,ratedSet:new Set(),status:'接続を確認しています…'};
+const canOnline=()=>!!(NET.db&&NET.room&&NET.uid);
+const myName=()=>(NET.me&&NET.me.name)||'あなた';
+async function netInit(){
+  const c=window.claude;if(!c||typeof c.use!=='function'){NET.off=true;NET.ready=true;NET.status='この環境ではオンライン機能を使えません（CPU戦・ひとつの端末・カスタムは遊べます）';render();return}
+  const [db,user,room]=await Promise.all([c.use('db'),c.use('user'),c.use('room')]);
+  NET.db=db;NET.user=user;NET.room=room;NET.uid=user?await user.id():null;NET.ready=true;
+  NET.canEdit=user?await user.canEdit():false;
+  if(db)db.collection('cardart').onSnapshot(s=>{const m={};s.docs.forEach(d=>{const v=d.data();if(v&&ART_OK.test(v.img||'')&&/^[a-z0-9_]{1,40}$/.test(d.id))m[d.id]=v.img});NET.art=m;applyArtStyles();softRender()},()=>{});
+  if(!db||!NET.uid){NET.status='オンライン機能を使うには、claude.ai にサインインした状態で開いてください';softRender();return}
+  NET.status=room?'オンライン':'観戦・ランキングのみ利用できます';
+  db.doc('players/'+NET.uid).onSnapshot(s=>{NET.me=s.exists?s.data():null;NET.meLoaded=true;softRender()},()=>{NET.meLoaded=true;softRender()});
+  db.collection('players').limit(500).onSnapshot(s=>{const m={};NET.ranking=s.docs.map(d=>{const v={...d.data(),uid:d.id};m[d.id]=v;return v});NET.players=m;softRender()},()=>{});
+  db.collection('cards').onSnapshot(s=>{const m={};s.docs.forEach(d=>{m[d.id]=d.data()});NET.allCards=m;softRender()},()=>{});
+  if(room){room.onPeers(ch=>{NET.peers=ch.peers;tryPair();softRender()},()=>{});room.presence({uid:NET.uid,mode:'idle'}).catch(()=>{})}
+  if(UI.screen==='watch')watchList();
+  softRender();
+}
+function queuePeers(){const seen=new Set();
+  return NET.peers.filter(p=>p.kind==='viewer'&&p.presence&&p.presence.mode==='queue'&&typeof p.presence.uid==='string'&&typeof p.presence.since==='number')
+    .slice().sort((a,b)=>(a.presence.since-b.presence.since)||(a.peer<b.peer?-1:1))
+    .filter(p=>{if(seen.has(p.presence.uid))return false;seen.add(p.presence.uid);return true})}
+function tryPair(){
+  if(!NET.queue||NET.matchId)return;const q=queuePeers();const i=q.findIndex(p=>p.sameTab);if(i<0)return;
+  const j=i%2===0?i+1:i-1;if(j>=q.length)return;
+  const host=q[Math.min(i,j)],guest=q[Math.max(i,j)];
+  const mid=('m'+host.presence.since.toString(36)+'-'+host.peer.slice(0,12)+'-'+guest.peer.slice(0,12)).toLowerCase().replace(/[^a-z0-9_.-]/g,'').slice(0,48);
+  startMatch(mid,host,guest)}
+function startQueue(){if(!canOnline()||!NET.me)return;NET.queue=true;NET.qSince=Date.now();NET.status='対戦相手を探しています';
+  NET.room.presence({uid:NET.uid,mode:'queue',since:NET.qSince,match:null}).catch(()=>{});tryPair()}
+function stopQueue(){NET.queue=false;NET.room&&NET.room.presence({mode:'idle',since:null}).catch(()=>{})}
+async function startMatch(mid,host,guest){
+  NET.queue=false;NET.matchId=mid;NET.isHost=!!host.sameTab;NET.seat=NET.isHost?0:1;NET.oppPeer=NET.isHost?guest.peer:host.peer;NET.oppSeen=Date.now();
+  UI.result=null;UI.waiting=false;NET.ratedSet.delete(mid);
+  NET.room.presence({mode:'matched',match:mid,since:null}).catch(()=>{});
+  try{NET.mroom=await NET.room.join(mid)}catch(e){NET.status='対戦部屋に入れませんでした。もう一度探してください';leaveMatch();return}
+  NET.mroom.on('act',onAct,()=>{});
+  NET.unsubMatch=NET.db.doc('matches/'+mid).onSnapshot(onMatchSnap,()=>{});
+  if(NET.isHost){
+    const [hs,gs]=await Promise.all([NET.db.doc('players/'+host.presence.uid).get(),NET.db.doc('players/'+guest.presence.uid).get()]).catch(()=>[null,null]);
+    const hd=(hs&&hs.exists&&hs.data())||{},gd=(gs&&gs.exists&&gs.data())||{};
+    const [hc,gc]=await Promise.all([NET.db.doc('cards/'+host.presence.uid).get(),NET.db.doc('cards/'+guest.presence.uid).get()]).catch(()=>[null,null]);
+    const custom=[...capCards((hc&&hc.exists&&hc.data().list)||[]),...capCards((gc&&gc.exists&&gc.data().list)||[])];
+    newGame({...FIXED,custom,vs:'online',rated:true,names:[hd.name||'プレイヤーA',gd.name||'プレイヤーB']});
+    G.net={mid,host:{uid:host.presence.uid,peer:host.peer,name:hd.name||'',rating:hd.rating??1500,icon:hd.icon||'sword'},
+                guest:{uid:guest.presence.uid,peer:guest.peer,name:gd.name||'',rating:gd.rating??1500,icon:gd.icon||'sword'}};
+    persist();
+  }else{
+    G=null;NET.joinWait=setTimeout(()=>{if(!G||!G.net||G.net.mid!==mid){NET.status='相手の準備ができませんでした。もう一度探してください';leaveMatch()}},15000);
+  }
+  NET.room.presence({mode:'playing',match:mid}).catch(()=>{});
+  UI.screen='game';render()}
+const ONLINE_CARD_CAP=20;
+function capCards(list){let left=ONLINE_CARD_CAP;const out=[];
+  for(const c of (Array.isArray(list)?list:[])){if(left<=0)break;if(!c||!c.key||!String(c.key).startsWith('cu_'))continue;const n=Math.max(1,Math.min(5,c.n|0,left));left-=n;out.push({...c,n})}
+  return out}
+function snapG(){return JSON.parse(JSON.stringify({...G,log:G.log.slice(-40),notes:[]}))}
+async function persist(){
+  if(!NET.isHost||!G||!G.net)return;G.seq=(G.seq||0)+1;
+  if(NET.writing){NET.pending=true;return}
+  NET.writing=true;
+  try{do{NET.pending=false;
+      await NET.db.doc('matches/'+G.net.mid).set({mid:G.net.mid,status:G.over?'done':'playing',G:snapG(),host:G.net.host,guest:G.net.guest,
+        winnerSeat:G.over?G.winnerSeat:null,turn:G.turn,updated:Date.now(),created:G.start})}while(NET.pending)}
+  catch(e){NET.status='対戦の保存に失敗しました（'+(e&&e.code||'error')+'）'}
+  NET.writing=false}
+function onMatchSnap(s){
+  if(!s.exists)return;const d=s.data();if(!d||d.mid!==NET.matchId)return;
+  if(!NET.isHost){
+    if(d.G&&(!G||!G.net||G.net.mid!==d.mid||(d.G.seq||0)>=(G.seq||0))){
+      const prev=G&&G.net&&G.net.mid===d.mid?G.stage:undefined;
+      G=JSON.parse(JSON.stringify(d.G));UI.waiting=false;
+      if(NET.joinWait){clearTimeout(NET.joinWait);NET.joinWait=null}
+      installCustom(G.cfg.custom);if(prev!==undefined&&G.stage&&G.stage!==prev)showStage(G.stage)}
+  }else if(d.status==='done'&&G&&!G.over&&typeof d.winnerSeat==='number'){
+    G.over=d.winnerSeat>=0?G.players[d.winnerSeat].name:'引き分け';G.winnerSeat=d.winnerSeat;G.end=Date.now();G.phase='over';log('相手側で決着が記録されました')}
+  if(G&&G.over)onOver();
+  render()}
+function onAct(msg){
+  if(!NET.isHost||!G||G.over||!G.net||msg.peer!==G.net.guest.peer)return;
+  const a=msg.data||{};
+  if(a.type==='resign'){finishBy(0,`${G.players[1].name}が降参しました`);return}
+  if(G.cur!==1||a.seq!==G.seq)return;
+  applyAct(a);afterChange()}
+function applyAct(a){
+  const p=cur(),i=Number.isInteger(a.i)?a.i:-1,t=Number.isInteger(a.t)?a.t:null;
+  if(a.type==='play'&&i>=0&&i<p.hand.length){const d=CARDS[p.hand[i].k];
+    const all=d.aoe||(isAtk(d)&&p.rally);
+    if(needsTarget(d)&&!all&&!neighbors(G.cur).includes(t))return;
+    play(i,all||!needsTarget(d)?null:t)}
+  else if(a.type==='end')advance();
+  else if(a.type==='buy'&&i>=0&&i<G.shop.length&&!whyNotBuy(i))doBuy(i);
+  else if(a.type==='reroll'&&p.mp>=1){p.mp--;G.shop=[];fillShop();log(`${p.name}がショップの品ぞろえを入れ替えた`)}
+  else if(a.type==='discard'&&!G.discarded&&i>=0&&i<p.hand.length){const c=p.hand.splice(i,1)[0];G.discarded=true;UI.sel=null;log(`${p.name}は「${CARDS[c.k].name}」を捨てた`)}}
+function act(a){
+  if(!G)return;
+  if(G.cfg.vs==='online'&&!NET.isHost){
+    if(!NET.mroom)return;UI.sel=null;UI.waiting=true;
+    NET.mroom.emit('act',{...a,seq:G.seq}).catch(()=>{UI.waiting=false;NET.status='送信できませんでした。もう一度押してください';render()});
+    render();return}
+  applyAct(a);afterChange()}
+function afterChange(){if(G&&G.cfg.vs==='online'){if(G.over)onOver();persist()}render()}
+function finishBy(seat,msg){if(!G||G.over)return;G.over=G.players[seat].name;G.winnerSeat=seat;G.end=Date.now();G.phase='over';log(msg);afterChange()}
+function resign(){if(!G||G.over||G.cfg.vs!=='online')return;
+  if(NET.isHost)finishBy(1,`${G.players[0].name}が降参しました`);
+  else if(NET.mroom)NET.mroom.emit('act',{type:'resign'}).catch(()=>{})}
+function onOver(){
+  if(!G||G.cfg.vs!=='online'||NET.spectating||!G.net)return;const mid=G.net.mid;
+  if(NET.ratedSet.has(mid))return;NET.ratedSet.add(mid);
+  const st=getStats('online');if(st.hist.some(h=>h.mid===mid))return;
+  const opp=NET.seat===0?G.net.guest:G.net.host;
+  const S=G.winnerSeat==null||G.winnerSeat<0?.5:G.winnerSeat===NET.seat?1:0;
+  const E=1/(1+10**(((opp.rating??1500)-st.rating)/400));
+  recordResult('online',Math.round(32*(S-E)),S===1?'勝ち':S===.5?'引き分け':'負け','オンライン',mid);
+  NET.room&&NET.room.presence({mode:'idle',match:null}).catch(()=>{})}
+function leaveMatch(){
+  if(NET.unsubMatch){NET.unsubMatch();NET.unsubMatch=null}
+  if(NET.mroom){NET.mroom.leave().catch(()=>{});NET.mroom=null}
+  if(NET.joinWait){clearTimeout(NET.joinWait);NET.joinWait=null}
+  NET.matchId=null;NET.isHost=false;NET.seat=null;G=null;UI.screen='online';
+  NET.room&&NET.room.presence({mode:'idle',match:null,since:null}).catch(()=>{});render()}
+function watchList(){if(NET.watchListOn||!NET.db)return;NET.watchListOn=true;
+  NET.db.collection('matches').where('status','==','playing').limit(40).onSnapshot(s=>{
+    NET.matches=s.docs.map(d=>d.data()).filter(m=>m&&Date.now()-(m.updated||0)<15*60000).sort((a,b)=>(b.updated||0)-(a.updated||0));softRender()},()=>{})}
+function startWatch(mid){if(!NET.db)return;NET.spectating=true;G=null;UI.screen='game';
+  NET.unsubWatch=NET.db.doc('matches/'+mid).onSnapshot(s=>{if(!s.exists)return;const d=s.data();if(!d||!d.G)return;
+    const prev=G?G.stage:undefined;G=JSON.parse(JSON.stringify(d.G));installCustom(G.cfg.custom);
+    if(prev!==undefined&&G.stage&&G.stage!==prev)showStage(G.stage);render()},()=>{});render()}
+function stopWatch(){if(NET.unsubWatch){NET.unsubWatch();NET.unsubWatch=null}NET.spectating=false;G=null;UI.screen='watch';render()}
+
+/* ---------- profile & cards ---------- */
+function myCards(){return canOnline()?((NET.allCards[NET.uid]||{}).list||[]):store.get()}
+function othersCards(){return Object.entries(NET.allCards).filter(([u])=>u!==NET.uid).flatMap(([u,v])=>(v.list||[]).map(c=>({...c,owner:u})))}
+async function saveMyCards(list){
+  if(canOnline()){try{await NET.db.doc('cards/'+NET.uid).set({list,updated:Date.now()});UI.msg='保存しました'}catch(e){UI.err='保存できませんでした（閲覧のみの権限では保存できません）'}}
+  else{store.set(list);UI.msg='このブラウザに保存しました'}
+  render()}
+async function saveProfile(){
+  const name=($('#p-name').value||'').trim().slice(0,12),comment=($('#p-cmt').value||'').trim().slice(0,40);
+  const ic=document.querySelector('input[name="p-icon"]:checked');const icon=ic?ic.value:'sword';
+  UI.err='';UI.msg='';
+  if(!name){UI.err='ニックネームを入れてください';render();return}
+  if(!canOnline()){UI.err='プロフィール登録には claude.ai でのサインインが必要です';render();return}
+  const base=NET.me||{rating:1500,games:0,wins:0,cpuRating:1500,cpuGames:0,cpuWins:0,hist:[],created:Date.now()};
+  try{await NET.db.doc('players/'+NET.uid).set({...base,name,icon,comment,updated:Date.now()});UI.msg='登録しました'}
+  catch(e){UI.err='保存できませんでした（このページの権限が「閲覧のみ」だと登録できません）'}
+  render()}
+
+/* ---------- view ---------- */
+function viewerIndex(){if(!G||NET.spectating)return -1;if(G.cfg.vs==='online')return NET.seat??-1;if(G.cfg.vs==='cpu')return 0;return G.cur}
+function isHumanTurn(){return !!G&&!G.over&&viewerIndex()===G.cur&&!(G.cfg.vs==='online'&&!NET.isHost&&UI.waiting)}
+let lastScreen='';
+function softRender(){const ae=document.activeElement;if(ae&&ae.closest&&ae.closest('#app')&&/INPUT|SELECT|TEXTAREA/.test(ae.tagName))return;render()}
+function render(){
+  const app=$('#app');if(!app)return;
+  document.body.dataset.stage=G&&G.stage?G.stage:'';
+  if(!G){
+    const keep=lastScreen===UI.screen,vals={};
+    if(keep&&typeof document.querySelectorAll==='function')document.querySelectorAll('#app input,#app select,#app textarea').forEach(el=>{if(el.id)vals[el.id]=el.type==='checkbox'||el.type==='radio'?el.checked:el.value});
+    app.innerHTML=screenHtml();lastScreen=UI.screen;
+    if(keep&&typeof document.getElementById==='function')for(const id in vals){const el=document.getElementById(id);if(el){if(el.type==='checkbox'||el.type==='radio')el.checked=vals[id];else el.value=vals[id]}}
+    cuPreview();return}
+  lastScreen='game';
+  app.innerHTML=boardHtml();
+  scheduleCpu();
+}
+function boardHtml(){
+  const vi=viewerIndex(),my=isHumanTurn(),online=G.cfg.vs==='online',spec=vi<0;
+  const n=G.players.length,order=[];
+  if(spec)for(let j=0;j<n;j++)order.push(j);else for(let s=1;s<n;s++)order.push((vi+s)%n);
+  const st=G.stage?CARDS[G.stage]:null;
+  let head=`<span class="pill">経過 <b class="num" id="clock">${fmt((G.end||Date.now())-G.start)}</b></span><span class="pill">ターン <b class="num">${G.turn}</b></span><span class="pill">山札 <b class="num">${G.deck.length}</b>${G.sudden?' ・サドンデス':''}</span>`;
+  if(online&&!G.over)head+=`<span class="pill">残り <b class="num" id="tleft">${Math.max(0,TURN_SEC-Math.floor((Date.now()-(G.turnStart||Date.now()))/1000))}</b>秒</span>`;
+  head+=`<button class="btn" data-act="catalog">ルール</button>`;
+  if(spec)head+=`<button class="btn" data-act="stopwatch">観戦をやめる</button>`;
+  else if(online)head+=G.over?`<button class="btn" data-act="leavematch">ロビーに戻る</button>`:`<button class="btn" data-act="resign">降参する</button>`;
+  else head+=`<button class="btn" data-act="totitle">タイトルへ</button>`;
+  const seat=j=>{const o=G.players[j];return `<div class="seat ${o.alive?'':'dead'} ${j===G.cur&&!G.over?'turn':''}">
+    <div class="seat-h"><h3>${esc(o.name)}</h3>${o.alive?(j===G.cur&&!G.over?'<span class="tag">手番</span>':o.cpu?'<span class="cpu">CPU</span>':''):'<span class="sub">脱落</span>'}</div>
+    ${bars(o)}<div class="chips">${chips(o,false)}</div><div class="sub">手札 ${o.hand.length}枚</div></div>`};
+  const label=online?(spec?'オンライン対戦を観戦中':'オンライン レート戦'):G.cfg.rated?'CPU レート戦':(G.cfg.label||'カスタム');
+  let mePanel='';
+  if(spec){mePanel=`<section class="me"><div class="me-h"><h2>観戦中</h2><span class="sub">手札と伏せ札の中身は見えません</span></div></section>`}
+  else{
+    const p=G.players[vi],sel=my&&UI.sel!=null?p.hand[UI.sel]:null;let actH='';
+    if(G.over)actH='<span class="sub">試合終了</span>';
+    else if(!my)actH=UI.waiting?'<span class="thinking">送信中…</span>':`<span class="thinking">${esc(cur().name)} の番です…</span>`;
+    else if(sel){const d=CARDS[sel.k],why=whyNot(sel),cb=why?null:findCombo(d);
+      if(why)actH=`<span class="why">${esc(why)}</span>`;
+      else if(d.aoe||(isAtk(d)&&p.rally))actH=`<button class="btn primary" data-act="use">「${esc(d.name)}」を相手全員に使う</button>`;
+      else if(needsTarget(d))actH=neighbors(G.cur).map(j=>`<button class="btn primary" data-act="use" data-t="${j}">「${esc(d.name)}」を ${esc(G.players[j].name)} に使う</button>`).join('');
+      else actH=`<button class="btn primary" data-act="use">「${esc(d.name)}」を使う</button>`;
+      if(cb)actH=`<span class="combo-chip">合わせ技「${esc(cb.name)}」発動：${esc(cb.text.split('：')[1])}${d.comboX2?'（2倍）':''}</span>`+actH;
+      actH+=`<button class="btn" data-act="discard" ${G.discarded?'disabled':''}>捨てる${G.discarded?'（済）':''}</button>`}
+    else actH='<span class="sub">カードを選んでください</span>';
+    mePanel=`<section class="me"><div class="me-h"><h2>${esc(p.name)}${my?' の番':''}</h2><div class="bars">${bars(p)}</div>
+      ${my?`<span class="pill">使用 <b class="num">${G.played} / ${G.maxPlays}</b></span><span class="pill">直前 <b>${G.lastCat?CATS[G.lastCat]:'なし'}</b></span>`:''}</div>
+      <div class="chips">${chips(p,true)}</div>
+      <div class="hand">${p.hand.map((c,i)=>my?cardHtml(c,(UI.sel===i?'sel ':'')+(whyNot(c)?'no':''),`data-act="sel" data-i="${i}" aria-pressed="${UI.sel===i}"`):cardHtml(c,'','tabindex="-1"')).join('')||'<span class="sub">手札なし</span>'}</div>
+      <div class="actions">${actH}<span class="grow"></span><button class="btn primary" data-act="end" ${my?'':'disabled'}>ターン終了</button></div></section>`}
+  return `<header class="top"><div><div class="sub">${label}</div><h1>毒と炎のカード決闘</h1></div><div class="meta">${head}</div></header>
+  ${online&&NET.status&&!spec&&!G.over&&NET.status.includes('失敗')?`<div class="notice">${esc(NET.status)}</div>`:''}
+  <div class="board ${spec?'spec':''}">
+  ${spec?'':`<aside class="shopcol">${shopHtml()}</aside>`}
+  <div class="maincol">
+  <section class="opps">${order.map(seat).join('')}</section>
+  <section class="mid"><div class="stage">${G.stage&&(hasArt(G.stage)||hasArt("bg_"+G.stage))?`<div class="stage-thumb art-${G.stage}"></div>`:''}<div class="sub">ステージ</div><h3>${st?esc(st.name):'平原'}</h3><div>${st?esc(st.text):'特別な効果なし'}</div></div>
+    <div class="log" aria-live="polite">${G.log.slice().reverse().map(m=>`<p>${esc(m)}</p>`).join('')}</div></section>
+  ${mePanel}
+  </div></div>
+  ${overlays()}`}
+function overlays(){
+  if(UI.catalog)return `<div class="ov dim">${catalogHtml()}</div>`;
+  const vi=viewerIndex();
+  if(G.peek&&G.peek.by===vi&&G.peek.n===G.turn&&UI.peekClosed!==G.turn+':'+G.peek.t&&!G.over){const t=G.players[G.peek.t];
+    const f=[...t.shields.map(v=>`盾 ${v}`),...(t.counter?['反撃の構え']:[]),...(t.parry?['受け流し']:[]),...(t.mirror?['鏡像']:[])];
+    return `<div class="ov dim"><div class="panel wide"><div class="actions"><h2 style="font-size:22px">透視：${esc(t.name)} の手の内</h2><span class="grow"></span><button class="btn primary" data-act="closepeek">閉じる</button></div>
+    <div class="sub">伏せ札：${f.length?esc(f.join('・')):'なし'}</div>
+    <div class="peek">${t.hand.map(c=>cardHtml(c,'','tabindex="-1"')).join('')||'<span class="sub">手札なし</span>'}</div></div></div>`}
+  if(G.phase==='over'||G.over){const ms=(G.end||Date.now())-G.start,online=G.cfg.vs==='online';
+    const title=G.winnerSeat===-1?'引き分け':(vi>=0&&G.winnerSeat===vi?'あなたの勝ち':esc(G.over)+' の勝ち');
+    const r=UI.result;
+    const btns=NET.spectating?`<button class="btn primary" data-act="stopwatch">観戦一覧へ</button>`
+      :online?`<button class="btn primary" data-act="leavematch">ロビーに戻る</button>`
+      :`<button class="btn primary" data-act="again">もう一度</button><button class="btn" data-act="totitle">タイトルへ</button>`;
+    return `<div class="ov"><div class="panel"><div class="sub">決着</div><h1 class="hero">${title}</h1>
+    <div class="meta"><span class="pill">試合時間 <b class="num">${fmt(ms)}</b></span><span class="pill">総ターン <b class="num">${G.turn}</b></span></div>
+    ${r&&!NET.spectating?`<div class="box"><div class="rating"><div><div class="sub">${KIND_NAME[r.kind]||""}レート</div><span class="big num">${r.after}</span></div>
+      <div class="tier ${r.delta>=0?'up':'dn'}">${r.delta>=0?'+':''}${r.delta}</div><div class="tier">${tier(r.after)}</div></div></div>`:''}
+    <div class="box rules"><b>最終状態</b><ul>${G.players.map(p=>`<li>${esc(p.name)}：体力 ${Math.max(0,p.hp)}</li>`).join('')}</ul></div>
+    <div class="actions">${btns}</div></div></div>`}
+  if(G.phase==='pass'){const p=cur();return `<div class="ov"><div class="panel"><div class="sub">ターン ${G.turn}</div>
+    <h1 class="hero">${esc(p.name)} の番</h1><p>画面を ${esc(p.name)} に渡してください。ほかの人は手札を見ないように。</p>
+    ${G.notes.length?`<div class="pass-notes">${G.notes.map(m=>`<p>${esc(m)}</p>`).join('')}</div>`:''}
+    <div class="actions"><button class="btn primary" data-act="reveal">手札を見る</button></div></div></div>`}
+  return ''}
+
+/* ---------- screens ---------- */
+const diffFor=r=>r<1400?'easy':r<1650?'normal':'hard';
+function profileChip(focus){const o=getStats('online'),c=getStats('cpu');
+  const box=(k,s)=>`<div class="pr ${focus&&focus!==k?'dim':''}"><span class="sub">${KIND_NAME[k]}レート</span><span class="num">${s.rating}</span><span class="sub">${tier(s.rating)}・${s.games}戦${s.wins}勝</span></div>`;
+  return `<div class="pcard">${avatar(NET.me?NET.me.icon:'sword')}<div><b>${esc(myName())}</b><div class="sub">${NET.me?'登録済み':'プロフィール未登録'}</div></div>
+    <div class="prs">${box('online',o)}${box('cpu',c)}</div></div>`}
+function backBtn(){return `<button class="btn" data-act="totitle">← タイトル</button>`}
+function screenHtml(){
+  const s=UI.screen;
+  if(s==='game')return `<div class="panel"><h1 class="hero thinking">${NET.spectating?'観戦データを読み込んでいます…':'対戦の準備をしています…'}</h1>
+    <p class="sub">${NET.spectating?'少し待っても表示されない場合は、対戦が終わった可能性があります。':'相手と接続しています。15秒たっても始まらない場合はロビーに戻ります。'}</p>
+    <div class="actions">${NET.spectating?'<button class="btn" data-act="stopwatch">観戦一覧へ</button>':'<button class="btn" data-act="leavematch">ロビーに戻る</button>'}</div></div>`;
+  const body=s==='online'?onlineHtml():s==='cpu'?cpuHtml():s==='local'?localHtml():s==='custom'?customHtml():s==='profile'?profileHtml():s==='ranking'?rankingHtml():s==='watch'?watchHtml():s==='art'?artHtml():titleHtml();
+  return body+(UI.catalog?`<div class="ov dim">${catalogHtml()}</div>`:'')}
+function titleHtml(){
+  const online=NET.peers.filter(p=>p.kind==='viewer').length;
+  return `<div class="panel title-panel">
+    <div class="crest">${avatar('flame')}${avatar('drop')}${avatar('sword')}</div>
+    <h1 class="hero big">毒と炎のカード決闘</h1>
+    <p class="lead">攻撃・毒・炎症・魔法を組み合わせて、相手の体力を削り切るカードバトル。</p>
+    ${profileChip()}
+    <div class="menu">
+      <button class="mbtn main" data-act="go" data-s="online"><b>オンライン対戦</b><span>離れた人と1対1。レート戦・ルール固定</span></button>
+      <button class="mbtn main" data-act="go" data-s="cpu"><b>CPU対戦</b><span>レート戦・ルール固定。強さはレートで自動</span></button>
+      <button class="mbtn" data-act="go" data-s="local"><b>ひとつの端末で</b><span>2〜4人で1台を交代で回す</span></button>
+      <button class="mbtn" data-act="go" data-s="custom"><b>カスタム</b><span>ルールを自由に設定・カードを作る</span></button>
+      <button class="mbtn" data-act="go" data-s="ranking"><b>ランキング</b><span>登録プレイヤーのレート順</span></button>
+      <button class="mbtn" data-act="go" data-s="watch"><b>観戦</b><span>いま行われている対戦を見る</span></button>
+      <button class="mbtn" data-act="go" data-s="profile"><b>プロフィール</b><span>ニックネームとアイコンの登録</span></button>
+      ${NET.canEdit?'<button class="mbtn" data-act="go" data-s="art"><b>絵柄の登録</b><span>カードに画像を付ける（持ち主・編集者のみ）</span></button>':''}
+      <button class="mbtn" data-act="catalog"><b>ルール・カード一覧</b><span>全カードと合わせ技</span></button>
+    </div>
+    <div class="sub">${esc(NET.status)}${NET.room?`・いま${online}人がページを開いています`:''}</div></div>`}
+function rulesBox(extra,customLine){return `<div class="box rules"><b>固定ルール</b><ul><li>2人対戦・体力30・最初の手札6枚・標準山札（全種類1セット）</li><li>${customLine||'自作カードは使えません'}</li>${extra||''}</ul></div>`}
+function onlineHtml(){
+  let main='';
+  if(!NET.ready)main='<p>接続を確認しています…</p>';
+  else if(!canOnline())main=`<div class="notice">${esc(NET.status)}</div>`;
+  else if(!NET.room)main='<div class="notice">この表示ではリアルタイム通信が使えません。claude.ai で開き直してください。</div>';
+  else if(!NET.meLoaded)main='<p>プロフィールを読み込んでいます…</p>';
+  else if(!NET.me)main=`<div class="notice">オンライン対戦にはプロフィール登録が必要です。</div><div class="actions"><button class="btn primary" data-act="go" data-s="profile">プロフィールを登録する</button></div>`;
+  else{
+    const q=queuePeers().length,here=NET.peers.filter(p=>p.kind==='viewer').length;
+    main=NET.queue?`<div class="box"><h2 class="thinking">対戦相手を探しています…</h2><div class="sub">待っている人 ${q}人・ページを開いている人 ${here}人</div>
+      <div class="sub">相手が見つかると自動で対戦が始まります。対戦相手は選べません（待っている順に組み合わせます）。</div>
+      <div class="actions"><button class="btn" data-act="unqueue">探すのをやめる</button></div></div>`
+    :`<div class="actions"><button class="btn primary big-btn" data-act="queue">対戦相手を探す</button></div>
+      <div class="sub">待っている人 ${q}人・ページを開いている人 ${here}人</div>`}
+  const mineN=canOnline()?capCards(myCards()).reduce((s,c)=>s+c.n,0):0;
+  return `<div class="panel">${backBtn()}<h1 class="hero">オンライン対戦</h1>${profileChip('online')}
+    ${rulesBox('<li>1ターン60秒。時間切れで自動的にターン終了</li><li>30秒以上接続が切れると負け。降参もできます</li><li>勝敗で「オンラインレート」が上下します（CPUレートとは別）</li>',
+      `両者の自作カードが山札に入ります（1人あたり合計${ONLINE_CARD_CAP}枚まで。あなたの分：${mineN}枚）`)}
+    ${NET.me?'<div class="actions"><button class="btn small" data-act="go" data-s="custom">自作カードを作る・確認する</button></div>':''}${main}</div>`}
+function cpuHtml(){const r=getStats('cpu').rating,df=diffFor(r);
+  return `<div class="panel">${backBtn()}<h1 class="hero">CPU対戦</h1>${profileChip('cpu')}
+    ${rulesBox(`<li>対戦相手は「CPUレート」で自動決定：〜1399 やさしい／1400〜1649 ふつう／1650〜 つよい</li><li>勝敗で「CPUレート」が上下します（オンラインレートとは別）</li>`)}
+    <div class="box"><div class="rating"><div><div class="sub">今回の相手</div><span class="tier">CPU（${LV[df].n}・${LV[df].r}）</span></div></div></div>
+    <div class="actions"><button class="btn primary big-btn" data-act="startcpu">対戦開始</button></div></div>`}
+function localHtml(){const c=UI.cfg;
+  return `<div class="panel">${backBtn()}<h1 class="hero">ひとつの端末で</h1><p>1台の画面を交代で回して遊びます。ルールは標準（体力30・手札6枚・標準山札）、レーティングは変わりません。</p>
+  <div class="box"><div class="form"><label for="l-n">人数<select id="l-n">${[2,3,4].map(v=>`<option ${v===c.n?'selected':''}>${v}</option>`).join('')}</select></label></div>
+  <div class="form">${[0,1,2,3].map(i=>`<label for="l-name${i}">プレイヤー${i+1}の名前<input id="l-name${i}" maxlength="12" value="${esc(c.names[i]||'プレイヤー'+(i+1))}"></label>`).join('')}</div></div>
+  <div class="actions"><button class="btn primary big-btn" data-act="startlocal">対戦開始</button></div></div>`}
+function customHtml(){const c=UI.cfg,vc=c.vs==='cpu';installCustom([]);
+  const catOpts=['atk','psn','fire','heal','def','buff','mp','draw','skill','magic'].map(k=>`<option value="${k}">${CATS[k]}</option>`).join('');
+  const mine=myCards(),others=othersCards();
+  const canMake=!canOnline()||!!NET.me;
+  return `<div class="panel">${backBtn()}<h1 class="hero">カスタム</h1><p>ルールを自由に決めて遊べます。作ったカードも使えます。レーティングは変わりません。</p>
+  <div class="box"><h2>ルール</h2><div class="form">
+    <label for="f-vs">相手<select id="f-vs"><option value="cpu" ${vc?'selected':''}>CPU</option><option value="hot" ${vc?'':'selected'}>ひとつの端末で交代</option></select></label>
+    <label for="f-diff">CPUの強さ<select id="f-diff">${Object.entries(LV).map(([k,v])=>`<option value="${k}" ${c.diff===k?'selected':''}>${v.n}</option>`).join('')}</select></label>
+    <label for="f-n">人数<select id="f-n">${[2,3,4].map(v=>`<option ${v===c.n?'selected':''}>${v}</option>`).join('')}</select></label>
+    <label for="f-hp">体力<input id="f-hp" type="number" min="5" max="99" value="${c.hp}"></label>
+    <label for="f-hand">最初の手札<input id="f-hand" type="number" min="3" max="10" value="${c.hand}"></label>
+    <label for="f-mode">山札の作り方<select id="f-mode"><option value="standard" ${c.deckMode==='standard'?'selected':''}>標準（全種類入り）</option><option value="random" ${c.deckMode==='random'?'selected':''}>ランダム</option></select></label>
+    <label for="f-size">山札の枚数<select id="f-size">${[['set','1セット'],['80','80枚'],['120','120枚'],['160','160枚'],['200','200枚'],['300','300枚']].map(([v,l])=>`<option value="${v}" ${String(c.deckSize)===v?'selected':''}>${l}</option>`).join('')}</select></label>
+  </div>
+  <div class="form">${[0,1,2,3].map(i=>`<label for="f-name${i}">${i===0?'あなた（プレイヤー1）':'プレイヤー'+(i+1)}の名前<input id="f-name${i}" maxlength="12" value="${esc(i===0&&NET.me?NET.me.name:(c.names[i]||''))}"></label>`).join('')}</div>
+  <div class="form"><label class="check" for="f-mine"><input id="f-mine" type="checkbox" ${c.useMine!==false?'checked':''}>自分のカードを入れる（${mine.length}種）</label>
+    ${canOnline()?`<label class="check" for="f-all"><input id="f-all" type="checkbox" ${c.useAll?'checked':''}>みんなのカードを入れる（${others.length}種）</label>`:''}</div>
+  <div class="actions"><button class="btn primary big-btn" data-act="startcustom">この設定で開始</button></div></div>
+  <div class="box"><h2>カードを作る</h2>
+    ${canMake?`<div class="maker"><div class="form">
+      <label for="cu-name">名前<input id="cu-name" maxlength="10" placeholder="例：雷撃"></label>
+      <label for="cu-cat">種類<select id="cu-cat">${catOpts}</select></label>
+      ${CU_FIELDS.map(([k,l,mn,mx])=>`<label for="cu-${k}">${l}<input id="cu-${k}" type="number" min="${mn}" max="${mx}" value="${k==='hits'||k==='n'?1:0}"></label>`).join('')}
+      <label class="check" for="cu-pierce"><input id="cu-pierce" type="checkbox">盾を無視</label>
+    </div><div><div class="sub">プレビュー</div><div id="cu-prev"></div></div></div>
+    <div class="actions"><button class="btn primary" data-act="cuadd">カードを保存</button><span class="err">${esc(UI.err)}</span><span class="ok">${esc(UI.msg||'')}</span></div>`
+    :`<div class="notice">カードを作るにはプロフィール登録が必要です。</div><div class="actions"><button class="btn primary" data-act="go" data-s="profile">プロフィールを登録する</button></div>`}
+    ${mine.length?`<div class="sub">自分のカード（${canOnline()?'プロフィールに保存。ほかの人もカスタムで使えます':'このブラウザに保存'}）</div><div class="mycards">${mine.map((d,i)=>`<div class="item">${cardHtml({k:d.key},'','tabindex="-1"',{...d,custom:1}).replace('</button>',`<span class="cnt" style="left:8px;right:auto">×${d.n}</span></button>`)}<button class="btn small" data-act="cudel" data-i="${i}">削除</button></div>`).join('')}</div>`:'<div class="sub">まだ作ったカードはありません。</div>'}
+    ${others.length?`<div class="sub">みんなのカード</div><div class="mycards">${others.slice(0,40).map(d=>`<div class="item">${cardHtml({k:d.key},'','tabindex="-1"',{...d,custom:1})}<span class="sub">作者：${esc((NET.players[d.owner]||{}).name||'未登録')}</span></div>`).join('')}</div>`:''}
+  </div></div>`}
+function profileHtml(){const me=NET.me||{},s=getStats();
+  let form='';
+  if(!NET.ready)form='<p>接続を確認しています…</p>';
+  else if(!canOnline())form=`<div class="notice">${esc(NET.status)}<br>プロフィール登録は、claude.ai にサインインしてこのページを開いたときに使えます。</div>`;
+  else form=`<div class="box"><div class="form">
+      <label for="p-name">ニックネーム（12文字まで）<input id="p-name" maxlength="12" value="${esc(me.name||'')}" placeholder="例：炎の剣士"></label>
+      <label for="p-cmt">ひとこと（40文字まで）<input id="p-cmt" maxlength="40" value="${esc(me.comment||'')}" placeholder="例：毒デッキ使いです"></label></div>
+    <div class="sub">アイコン</div>
+    <div class="icon-pick">${ICONS.map(ic=>`<label class="ip" for="pi-${ic}"><input type="radio" name="p-icon" id="pi-${ic}" value="${ic}" ${(me.icon||'sword')===ic?'checked':''}><span>${avatar(ic)}</span></label>`).join('')}</div>
+    <div class="sub">本名・メールアドレス・住所などの個人情報は入れないでください。ニックネームとひとことは、このページを開けるほかの人にも表示されます。</div>
+    <div class="actions"><button class="btn primary" data-act="saveprofile">${NET.me?'更新する':'登録する'}</button><span class="err">${esc(UI.err)}</span><span class="ok">${esc(UI.msg||'')}</span></div></div>`;
+  return `<div class="panel">${backBtn()}<h1 class="hero">プロフィール</h1>${profileChip()}${form}
+    <div class="box"><h2>直近の対戦</h2><div class="hist">${s.hist.length?s.hist.map(h=>`<span>${h.res}・${esc(h.lv)} <b class="${h.d>=0?'up':'dn'}">${h.d>=0?'+':''}${h.d}</b></span>`).join(''):'<span class="sub" style="border:0;padding:0">まだ対戦記録がありません</span>'}</div></div></div>`}
+function rankRows(kind){const [r,g,w]=KF[kind];
+  return NET.ranking.filter(p=>p.name).map(p=>({...p,_r:p[r]??1500,_g:p[g]||0,_w:p[w]||0})).sort((a,b)=>(b._r-a._r)||(b._g-a._g))}
+function rankingHtml(){
+  const kind=UI.rankKind||'online',rows=rankRows(kind);
+  const tab=k=>`<button class="btn ${kind===k?'primary':''}" data-act="rankkind" data-k="${k}" aria-pressed="${kind===k}">${KIND_NAME[k]}レート</button>`;
+  return `<div class="panel">${backBtn()}<h1 class="hero">ランキング</h1><div class="actions">${tab('online')}${tab('cpu')}</div>
+    ${!canOnline()?`<div class="notice">${esc(NET.status)}</div>`:rows.length?`<div class="tbl"><table><thead><tr><th>順位</th><th>プレイヤー</th><th>${KIND_NAME[kind]}レート</th><th>称号</th><th>戦績</th></tr></thead><tbody>
+    ${rows.map((p,i)=>`<tr class="${p.uid===NET.uid?'me-row':''}"><td class="num">${i+1}</td><td><span class="who">${avatar(p.icon)}<span><b>${esc(p.name)}</b>${p.comment?`<br><span class="sub">${esc(p.comment)}</span>`:''}</span></span></td><td class="num">${p._r}</td><td>${tier(p._r)}</td><td class="num">${p._g}戦${p._w}勝</td></tr>`).join('')}
+    </tbody></table></div>`:'<p class="sub">まだ登録プレイヤーがいません。</p>'}</div>`}
+function watchHtml(){
+  if(NET.ready&&NET.db)watchList();
+  const ms=NET.matches;
+  return `<div class="panel">${UI.watchOnly?'':backBtn()}<h1 class="hero">観戦</h1><p>いま行われているオンライン対戦を見られます。手札と伏せ札の中身は表示されません。</p>
+    ${!NET.ready?'<p>接続を確認しています…</p>':!NET.db?`<div class="notice">${esc(NET.status)}</div>`:ms.length?`<div class="watch-list">${ms.map(m=>`<div class="watch-item">
+      <div class="vs">${avatar(m.host&&m.host.icon)}<b>${esc(m.host&&m.host.name||'?')}</b><span class="sub num">${m.host&&m.host.rating||''}</span><span class="vs-mark">VS</span>${avatar(m.guest&&m.guest.icon)}<b>${esc(m.guest&&m.guest.name||'?')}</b><span class="sub num">${m.guest&&m.guest.rating||''}</span></div>
+      <span class="sub">ターン ${m.turn||1}</span><button class="btn primary small" data-act="watch" data-m="${esc(m.mid)}">観戦する</button></div>`).join('')}</div>`
+      :'<p class="sub">いまは対戦が行われていません。始まると自動でここに表示されます。</p>'}
+    <div class="sub">ランキング</div>${rankMini()}</div>`}
+function rankMini(){const rows=rankRows('online').slice(0,10);if(!rows.length)return '<p class="sub">登録プレイヤーはまだいません。</p>';
+  return `<div class="tbl"><table><tbody>${rows.map((p,i)=>`<tr><td class="num">${i+1}</td><td><span class="who">${avatar(p.icon)}<b>${esc(p.name)}</b></span></td><td class="num">${p._r}</td><td>${tier(p._r)}</td></tr>`).join('')}</tbody></table></div>`}
+function catalogHtml(){
+  installCustom(G?G.cfg.custom:[]);
+  const groups={};Object.keys(CATS).forEach(k=>groups[k]=[]);for(const k in CARDS)(groups[CARDS[k].cat]||(groups[CARDS[k].cat]=[])).push(k);
+  const total=Object.values(CARDS).reduce((s,d)=>s+d.n,0);
+  groups.shop=[];Object.keys(groups).forEach(cat=>{if(cat==='shop')return;groups[cat]=groups[cat].filter(k=>{if(CARDS[k].shopOnly){groups.shop.push(k);return false}return true})});
+  return `<div class="panel wide"><div class="actions"><h2 style="font-size:22px">ルールとカード一覧</h2><span class="grow"></span><button class="btn primary" data-act="closecat">閉じる</button></div>
+  <div class="box rules"><ul>
+    <li>ターン開始時：遅効毒 → 毒ダメージ（その後毒−1）→ 再生 → MP+2 → 山札から1枚引く（手札の上限10枚）。もっと引きたいときはドローカードを使う。</li>
+    <li>1ターンにカードを最大2枚使える。1ターンに1枚まで、使わずに捨ててもよい。</li>
+    <li>MPは最初5、毎ターン+2、最大10。必殺・魔法カードやショップでの購入に使う。</li>
+    <li>カードショップには常に3枚並ぶ。1ターンに1枚までMPで買え、買ったカードはすぐ手札に入る（使用枠は消費しない）。MP1で品ぞろえを入れ替えられる。</li>
+    <li>盾・反撃の構え・受け流し・鏡像は伏せて置く。相手からは「伏せ札」の枚数しか見えない。</li>
+    <li>炎症中の相手は、攻撃1回ごとにダメージ+2（毒ダメージは増えない）。毒は盾を無視する。</li>
+    <li>攻撃・妨害は誰にでもできる。「相手全員」のカード（全体攻撃）はほかのプレイヤー全員に当たる。</li>
+    <li>合わせ技：同じターンに続けてカードを使うと、直前のカードの系統によって追加効果が出る（下の一覧）。</li>
+    <li>ステージカードは使用枠を消費しない。出すと盤面の色も変わる。</li>
+    <li>山札が尽きたらサドンデス。全員がターン開始時に2ダメージを受ける。</li>
+  </ul></div>
+  <div class="box rules"><b>合わせ技一覧</b><ul>${COMBOS.map(c=>`<li><b>${c.name}</b>　${c.text}</li>`).join('')}</ul></div>
+  <div class="sub">山札 ${total}枚（右下が枚数。盾の数値は 2・3・4）</div>
+  ${Object.entries(groups).filter(([,ks])=>ks.length).map(([cat,ks])=>`<div class="cat-h" data-cat="${cat==='shop'?'mp':cat}"><h3>${cat==='shop'?'ショップ限定':CATS[cat]}</h3><span class="sub">${ks.length}種</span></div>
+    <div class="cat-grid">${ks.map(k=>cardHtml({k},'','tabindex="-1"').replace('</button>',`<span class="cnt">${CARDS[k].shopOnly?'価格MP'+price(CARDS[k]):'×'+CARDS[k].n}</span></button>`)).join('')}</div>`).join('')}
+  </div>`}
+
+/* ---------- card art (images) ---------- */
+const ART_OK=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/;
+const hasArt=k=>!!(typeof NET!=='undefined'&&NET.art&&NET.art[k]);
+function applyArtStyles(){if(typeof document.getElementById!=='function')return;let el=document.getElementById('artcss');
+  if(!el){el=document.createElement('style');el.id='artcss';document.head.appendChild(el)}
+  const art=NET.art||{};
+  const cardCss=Object.entries(art).filter(([k])=>!k.startsWith('bg_')).map(([k,u])=>`.card .art.pic.art-${k}{background:#111 url("${u}") center/cover no-repeat}`);
+  /* ステージ背景：横長の bg_st_* があればそれを、無ければステージカードの絵柄を使う */
+  const stageCss=Object.keys(BASE).filter(k=>k.startsWith('st_')).map(k=>{const u=art['bg_'+k]||art[k];if(!u)return '';
+    return `body[data-stage=${k}]{background:linear-gradient(180deg,rgba(8,12,14,.55) 0%,rgba(8,12,14,.78) 55%,rgba(8,12,14,.9) 100%),url("${u}") center/cover no-repeat fixed;background-color:var(--felt)}
+.stage-thumb.art-${k}{background-image:url("${u}")}`}).filter(Boolean);
+  el.textContent=[...cardCss,...stageCss].join('\n')}
+function artKeyFrom(name){let k=String(name||'').toLowerCase().replace(/\.(jpe?g|png|webp)$/,'').replace(/^cardart_|^card_/,'').trim();
+  if(BASE[k]||/^cu_[a-z0-9]+$/.test(k)||/^bg_st_[a-z]+$/.test(k)&&BASE[k.slice(3)])return k;
+  const byName=Object.keys(CARDS).find(x=>CARDS[x].name===String(name||'').replace(/\.(jpe?g|png|webp)$/i,'').trim());return byName||null}
+async function saveArtMap(map){
+  if(!NET.db||!NET.canEdit){UI.err='絵柄を登録できるのはページの持ち主・編集者だけです';render();return}
+  let ok=0,bad=[];
+  for(const [name,img] of Object.entries(map)){const k=artKeyFrom(name);
+    if(!k||!ART_OK.test(img)||img.length>(k.startsWith('bg_')?250000:200000)){bad.push(name);continue}
+    try{await NET.db.doc('cardart/'+k).set({img,updated:Date.now()});ok++}catch(e){bad.push(name)}}
+  UI.msg=`${ok}枚を登録しました`;UI.err=bad.length?`登録できなかったもの：${bad.join('、')}`:'';render()}
+async function exportArt(){const art=NET.art||{};const n=Object.keys(art).length;if(!n){UI.err='書き出す絵柄がありません';render();return}
+  const data=JSON.stringify(art);
+  if(window.claude&&window.claude.server){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.download='cardart.json';document.body.appendChild(a);a.click();a.remove();UI.msg=`${n}枚の絵柄を書き出しました`;render();return}
+  let dl=null;try{dl=await window.claude.use('downloads')}catch(e){}
+  if(!dl){UI.err='この画面ではファイルを保存できません';render();return}
+  try{await dl.save({filename:'cardart.json',data});UI.msg=`${n}枚の絵柄を書き出しました`;UI.err=''}catch(e){UI.err=e&&e.code==='declined'?'保存を取りやめました':'書き出せませんでした'}render()}
+function saveArtJson(){const t=($('#art-json')||{}).value||'';let map;
+  try{map=JSON.parse(t)}catch(e){UI.err='貼り付けたデータを読み取れませんでした';render();return}
+  if(!map||typeof map!=='object'){UI.err='貼り付けたデータの形式が違います';render();return}
+  UI.msg='保存しています…';render();saveArtMap(map)}
+function fileToData(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
+  const c=document.createElement('canvas');c.width=c.height=320;const s=Math.min(im.width,im.height);
+  c.getContext('2d').drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,320,320);res(c.toDataURL('image/jpeg',0.8))};im.onerror=rej;im.src=r.result};r.onerror=rej;r.readAsDataURL(f)})}
+async function saveArtFiles(){const inp=$('#art-files');const fs=inp&&inp.files?[...inp.files]:[];
+  if(!fs.length){UI.err='画像ファイルを選んでください';render();return}
+  UI.msg='読み込んでいます…';render();const map={};
+  for(const f of fs){try{map[f.name]=await fileToData(f)}catch(e){}}
+  saveArtMap(map)}
+function artHtml(){
+  installCustom(myCards());
+  const keys=Object.keys(NET.art||{});
+  return `<div class="panel">${backBtn()}<h1 class="hero">絵柄の登録</h1>
+  <p>カードに画像を付けます。登録した絵柄は、このページを開く全員の画面に表示されます。</p>
+  ${!NET.ready?'<p>接続を確認しています…</p>':!NET.canEdit?'<div class="notice">絵柄を登録できるのは、ページの持ち主と編集者だけです。</div>':`
+  <div class="box"><h2>画像ファイルから</h2>
+    <div class="sub">ファイル名をカードの英字キーかカード名にしてください（例：card_slash.jpg、斬撃.png）。正方形に切り抜いて320×320に縮小します。</div>
+    <input id="art-files" type="file" accept="image/*" multiple>
+    <div class="actions"><button class="btn primary" data-act="artfiles">選んだ画像を登録</button></div></div>
+  <div class="box"><h2>データを貼り付けて</h2>
+    <div class="sub">{"slash":"data:image/jpeg;base64,…"} の形のデータを貼り付けます（Grokの画面からまとめて移すとき用）。</div>
+    <textarea id="art-json" class="paste" placeholder="ここに貼り付け"></textarea>
+    <div class="actions"><button class="btn primary" data-act="artjson">貼り付けたデータを登録</button></div></div>
+  <div class="box"><h2>書き出し</h2><div class="sub">登録済みの絵柄をまとめて cardart.json に保存します（別のサーバーへ移すとき用）。</div>
+    <div class="actions"><button class="btn" data-act="artexport">絵柄をファイルに書き出す</button></div></div>
+  <div class="actions"><span class="err">${esc(UI.err)}</span><span class="ok">${esc(UI.msg||'')}</span></div>`}
+  <div class="box"><h2>登録済みの絵柄（${keys.length}枚）</h2>
+    ${keys.length?`<div class="art-grid">${keys.filter(k=>CARDS[k]).map(k=>`<div class="item">${cardHtml({k},'','tabindex="-1"')}${NET.canEdit?`<button class="btn small" data-act="artdel" data-k="${k}">絵柄を外す</button>`:''}</div>`).join('')}</div>`:'<p class="sub">まだ登録された絵柄はありません。</p>'}</div></div>`}
+
+/* ---------- start helpers ---------- */
+function readCustomCfg(){const c=UI.cfg,v=id=>{const el=$('#'+id);return el?el.value:''};
+  c.vs=v('f-vs')||'cpu';c.diff=v('f-diff')||'normal';c.n=+v('f-n')||2;c.hp=Math.max(5,Math.min(99,+v('f-hp')||30));c.hand=Math.max(3,Math.min(10,+v('f-hand')||6));
+  c.deckMode=v('f-mode')||'standard';c.deckSize=v('f-size')||'set';
+  const m=$('#f-mine'),a=$('#f-all');c.useMine=m?m.checked:true;c.useAll=a?a.checked:false;
+  for(let i=0;i<4;i++){const x=v('f-name'+i).trim();c.names[i]=x||(i===0?myName():'プレイヤー'+(i+1))}}
+function startCustom(){readCustomCfg();const c=UI.cfg;
+  const list=[...(c.useMine?myCards():[]),...(c.useAll?othersCards():[])].slice(0,60);
+  newGame({vs:c.vs==='cpu'?'cpu':'hot',rated:false,diff:c.diff,n:c.n,hp:c.hp,hand:c.hand,deckMode:c.deckMode,deckSize:c.deckSize,custom:list,names:c.names.slice()});UI.screen='game'}
+function startCpuRated(){const df=diffFor(getStats('cpu').rating);
+  newGame({...FIXED,vs:'cpu',rated:true,diff:df,names:[myName(),'CPU']});UI.screen='game'}
+function startLocal(){const c=UI.cfg;c.n=+($('#l-n')||{}).value||2;
+  for(let i=0;i<4;i++){const el=$('#l-name'+i);c.names[i]=(el&&el.value.trim())||'プレイヤー'+(i+1)}
+  newGame({...FIXED,vs:'hot',rated:false,label:'ひとつの端末で対戦',n:c.n,names:c.names.slice()});UI.screen='game'}
+
+/* ---------- custom card maker ---------- */
+const CU_FIELDS=[['cost','必要MP',0,10],['dmg','ダメージ',0,15],['hits','攻撃回数',1,6],['poison','毒',0,8],['inflame','炎症ターン',0,5],['heal','回復',0,15],['shieldVal','盾の数値',0,6],['mp','MP回復',0,6],['atkUp','攻撃+（2ターン）',0,5],['self','自分へのダメージ',0,10],['draw','カードを引く',0,3],['n','山札の枚数',1,5]];
+function cuText(c){const t=[];
+  if(c.dmg)t.push(`${c.dmg}ダメージ${c.hits>1?`×${c.hits}回`:''}${c.pierce?'（盾無視）':''}`);
+  if(c.poison)t.push(`毒+${c.poison}`);if(c.inflame)t.push(`炎症${c.inflame}ターン`);
+  if(c.heal)t.push(`体力+${c.heal}`);if(c.shieldVal)t.push(`盾${c.shieldVal}を伏せる`);
+  if(c.mp)t.push(`MP+${c.mp}`);if(c.atkUp)t.push(`2ターン攻撃+${c.atkUp}`);
+  if(c.self)t.push(`自分に${c.self}ダメージ`);if(c.draw)t.push(`${c.draw}枚引く`);
+  return t.join('。')||'効果なし'}
+function readCu(){const c={name:($('#cu-name').value||'').trim().slice(0,10),cat:$('#cu-cat').value,pierce:$('#cu-pierce').checked?1:0,custom:1};
+  CU_FIELDS.forEach(([k,,mn,mx])=>{c[k]=Math.max(mn,Math.min(mx,Math.floor(+$('#cu-'+k).value||0)))});
+  if(!c.dmg){c.hits=1;c.pierce=0}c.text=cuText(c);return c}
+function cuPreview(){const el=document.getElementById&&document.getElementById('cu-prev');if(el){const c=readCu();el.innerHTML=cardHtml({k:'_prev'},'','tabindex="-1"',{...c,name:c.name||'（名前）'})}}
+
+/* ---------- events ---------- */
+document.addEventListener('input',e=>{if(e.target.id&&e.target.id.startsWith('cu-'))cuPreview()});
+document.addEventListener('change',e=>{if(e.target.id&&e.target.id.startsWith('cu-'))cuPreview()});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const a=b.dataset.act;
+  if(['sel','use','discard','end','buy','reroll'].includes(a)&&!isHumanTurn())return;
+  UI.err='';if(a!=='saveprofile'&&a!=='cuadd'&&a!=='cudel')UI.msg='';
+  if(a==='go'){UI.screen=b.dataset.s;if(UI.screen==='watch')watchList()}
+  else if(a==='totitle'){if(UI.cpuTimer){clearTimeout(UI.cpuTimer);UI.cpuTimer=null}G=null;UI.screen='title';if(NET.queue)stopQueue()}
+  else if(a==='catalog')UI.catalog=true;
+  else if(a==='closecat')UI.catalog=false;
+  else if(a==='startcpu')startCpuRated();
+  else if(a==='startlocal')startLocal();
+  else if(a==='startcustom')startCustom();
+  else if(a==='again'){const cfg=G.cfg;if(cfg.rated&&cfg.vs==='cpu')startCpuRated();else newGame(cfg)}
+  else if(a==='reveal')G.phase='play';
+  else if(a==='sel'){const i=+b.dataset.i;UI.sel=UI.sel===i?null:i}
+  else if(a==='use'){act({type:'play',i:UI.sel,t:b.dataset.t!=null?+b.dataset.t:null});UI.sel=null;return}
+  else if(a==='discard'){act({type:'discard',i:UI.sel});UI.sel=null;return}
+  else if(a==='end'){UI.sel=null;act({type:'end'});return}
+  else if(a==='buy'){act({type:'buy',i:+b.dataset.i});return}
+  else if(a==='reroll'){act({type:'reroll'});return}
+  else if(a==='closepeek'){UI.peekClosed=G.turn+':'+G.peek.t}
+  else if(a==='rankkind')UI.rankKind=b.dataset.k;
+  else if(a==='artjson'){saveArtJson();return}
+  else if(a==='artexport'){exportArt();return}
+  else if(a==='artfiles'){saveArtFiles();return}
+  else if(a==='artdel'){if(NET.db&&NET.canEdit)NET.db.doc('cardart/'+b.dataset.k).delete().catch(()=>{});return}
+  else if(a==='queue')startQueue();
+  else if(a==='unqueue'){stopQueue();NET.status='オンライン'}
+  else if(a==='resign')resign();
+  else if(a==='leavematch'){leaveMatch();return}
+  else if(a==='watch'){startWatch(b.dataset.m);return}
+  else if(a==='stopwatch'){stopWatch();return}
+  else if(a==='saveprofile'){saveProfile();return}
+  else if(a==='cuadd'){const c=readCu();const mine=myCards();
+    if(!c.name)UI.err='カードの名前を入れてください';
+    else if(c.text==='効果なし')UI.err='効果を1つ以上入れてください';
+    else if(mine.length>=30)UI.err='作れるカードは30種までです';
+    else{c.key='cu_'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);saveMyCards([...mine,c]);return}}
+  else if(a==='cudel'){const mine=myCards().slice();mine.splice(+b.dataset.i,1);saveMyCards(mine);return}
+  render()});
+setInterval(()=>{
+  if(!G)return;const el=$('#clock');if(el&&!G.end)el.textContent=fmt(Date.now()-G.start);
+  if(G.cfg.vs!=='online'||G.over||NET.spectating)return;
+  const left=Math.max(0,TURN_SEC-Math.floor((Date.now()-(G.turnStart||Date.now()))/1000));const tl=$('#tleft');if(tl)tl.textContent=left;
+  if(NET.mroom&&NET.mroom.peers().some(p=>p.peer===NET.oppPeer))NET.oppSeen=Date.now();
+  if(NET.isHost&&left<=0){log(`${cur().name}の時間切れ`);advance();afterChange();return}
+  if(Date.now()-NET.oppSeen>30000){
+    if(NET.isHost)finishBy(0,'相手の接続が切れたため勝利');
+    else if(G.net){G.over=G.players[1].name;G.winnerSeat=1;G.end=Date.now();G.phase='over';log('相手の接続が切れたため勝利');
+      NET.db.doc('matches/'+G.net.mid).update({status:'done',winnerSeat:1,G:snapG(),updated:Date.now()}).catch(()=>{});onOver();render()}}
+},1000);
+function routeHash(){if(location.hash==='#watch'){UI.screen='watch';UI.watchOnly=true;if(!G)render();watchList()}}
+window.addEventListener('hashchange',routeHash);
+window.claude?.hot?.snapshot?.(()=>({G:G&&G.cfg.vs!=='online'&&!NET.spectating?G:null,cfg:UI.cfg,screen:UI.screen}));
+const boot=d=>{if(d&&d.cfg)UI.cfg={...UI.cfg,...d.cfg};if(d&&d.screen&&d.screen!=='game')UI.screen=d.screen;
+  if(d&&d.G&&d.G.players&&Array.isArray(d.G.out)&&d.G.cfg&&d.G.cfg.vs!=='online'){G=d.G;UI.screen='game';installCustom(G.cfg.custom)}
+  routeHash();render();netInit()};
+window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??{});
+</script>
