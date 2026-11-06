@@ -43,6 +43,9 @@ h1,h2,h3{font-family:var(--f-display);font-weight:400;text-wrap:balance;margin:0
 .opps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .seat{background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .seat.dead{opacity:.4}
+.seat.ally{background:rgba(120,190,150,.1)}
+.teamtag{font-size:11px;font-weight:400;border:1px solid var(--line);border-radius:4px;padding:0 6px;margin-right:6px;color:var(--muted);vertical-align:middle}
+.teamtag.ally{color:#a9e0bd;border-color:#a9e0bd}
 .seat-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .seat-h h3{font-size:16px}
 .tag{font-size:11px;letter-spacing:.08em;color:var(--brass);border:1px solid var(--brass);border-radius:4px;padding:0 6px}
@@ -396,14 +399,14 @@ function newGame(cfg){
   installCustom(cfg.custom);UI.result=null;UI.waiting=false;
   const bd=buildDeck(cfg);
   const vc=cfg.vs==='cpu';
-  const players=cfg.names.slice(0,cfg.n).map((n,i)=>{if(vc&&i>0){const p=newPlayer(`CPU${cfg.n>2?i:''}（${LV[cfg.diff].n}）`,cfg.hp);p.cpu=true;p.diff=cfg.diff;return p}return newPlayer(n||'名無し',cfg.hp)});
+  const players=cfg.names.slice(0,cfg.n).map((n,i)=>{if(vc&&i>0){const p=newPlayer(`${cfg.team?(i===2?'味方CPU':'敵CPU'+(i===1?1:2)):'CPU'+(cfg.n>2?i:'')}（${LV[cfg.diff].n}）`,cfg.hp);p.cpu=true;p.diff=cfg.diff;return p}return newPlayer(n||'名無し',cfg.hp)});
   if(UI.cpuTimer){clearTimeout(UI.cpuTimer);UI.cpuTimer=null}
   G={cfg:JSON.parse(JSON.stringify(cfg)),players,deck:bd.deck,stage:null,cur:0,out:[],cpuN:0,ratingDelta:null,winnerSeat:null,seq:0,peek:null,net:null,turnStart:Date.now(),
      played:0,maxPlays:2,discarded:false,bought:false,shop:[],turn:1,log:[],notes:[],start:Date.now(),end:null,sudden:false,phase:'pass',over:null};
   fillShop();UI.peek=null;
   G.players.forEach(p=>{for(let i=0;i<cfg.hand;i++)draw(p)});
   const nc=(cfg.custom||[]).filter(c=>CARDS[c.key]).length;
-  log(`ゲーム開始（${G.players.length}人・体力${cfg.hp}・手札${cfg.hand}枚・山札${G.deck.length+G.players.length*cfg.hand}枚・${cfg.deckMode==='random'?'ランダム山札':'標準山札'} ${bd.types}種類${nc?`・自作カード${nc}種`:''}）`);
+  log(`ゲーム開始（${cfg.team?'2対2':G.players.length+'人'}・体力${cfg.hp}・手札${cfg.hand}枚・山札${G.deck.length+G.players.length*cfg.hand}枚・${cfg.deckMode==='random'?'ランダム山札':'標準山札'} ${bd.types}種類${nc?`・自作カード${nc}種`:''}）`);
   beginTurn();
 }
 const cur=()=>G.players[G.cur];
@@ -413,11 +416,14 @@ function hurt(p,n,src){if(n<=0||!p.alive)return;p.hp-=n;log(`${p.name}に${n}ダ
 function heal(p,n,src){if(G.stage==='st_sanct')n*=2;const b=p.hp;p.hp=Math.min(p.max,p.hp+n);log(`${p.name}の体力+${p.hp-b}（${src}）`)}
 function gainMp(p,n){const b=p.mp;p.mp=Math.max(0,Math.min(MPMAX,p.mp+n));return p.mp-b}
 const effCost=d=>d.cost?Math.max(1,d.cost-(G&&G.stage==='st_spring'?1:0)):0;
-function neighbors(i){return G.players.map((_,j)=>j).filter(j=>j!==i&&G.players[j].alive)}
+function neighbors(i){return G.players.map((_,j)=>j).filter(j=>j!==i&&G.players[j].alive&&!(G.cfg.team&&j%2===i%2))}
+const overName=t=>t<0?'引き分け':G.cfg.team?`${G.players[t].name}・${G.players[t+2].name}チーム`:G.players[t].name;
 function checkDeaths(){
   G.players.forEach(p=>{if(p.alive&&p.hp<=0){if(p.guts){p.guts=false;p.hp=1;log(`${p.name}は根性で踏みとどまった（体力1）`)}else if(p.phoenix){p.phoenix=false;p.hp=Math.min(p.max,10);log(`${p.name}は不死鳥の羽で復活した（体力${p.hp}）`)}else{p.alive=false;p.hp=0;G.out.push(G.players.indexOf(p));log(`${p.name}が倒れた`)}}});
   const alive=G.players.filter(p=>p.alive);
-  if(!G.over&&(alive.length<=1||(G.cfg.vs==='cpu'&&!G.players[0].alive))){
+  if(!G.over&&G.cfg.team){const tm=[0,1].map(t=>G.players.some((p,j)=>p.alive&&j%2===t));
+    if(!(tm[0]&&tm[1])){const t=tm[0]?0:tm[1]?1:-1;G.winTeam=t;G.winnerSeat=t;G.over=overName(t);G.end=Date.now();G.phase='over'}}
+  if(!G.over&&!G.cfg.team&&(alive.length<=1||(G.cfg.vs==='cpu'&&!G.players[0].alive))){
     const w=alive.length?alive.slice().sort((a,b)=>b.hp-a.hp)[0]:null;
     G.over=w?w.name:'引き分け';G.winnerSeat=w?G.players.indexOf(w):-1;G.end=Date.now();G.phase='over';
     if(!SIM&&G.cfg.vs==='cpu'&&G.cfg.rated)applyRating()}
@@ -443,13 +449,13 @@ function recordResult(kind,delta,res,label,mid){
   else{UI.rating={...UI.rating,...patch};rstore.set(UI.rating)}}
 /* ---------- CPU ---------- */
 function evalState(me){
-  const p=G.players[me];if(!p.alive||p.hp<=0)return -1e5;
+  const p=G.players[me];if(G.over&&G.cfg.team)return G.winTeam===me%2?1e5:-1e5;if(!p.alive||p.hp<=0)return -1e5;
   if(G.over&&G.over===p.name)return 1e5;
   const sumB=a=>a.reduce((s,b)=>s+b.amt*b.t,0);
   let s=p.hp*1.0+p.mp*0.25+p.shields.reduce((a,v)=>a+v,0)*0.6+(p.counter?1.5:0)+(p.parry?1.5:0)+(p.mirror?2:0)+(p.wall?3:0)
     +p.thorns*0.8+p.barrier*0.8+(p.guts?3:0)+(p.phoenix?6:0)+p.regen*1.5+sumB(p.buffs)*0.5+(p.allin?2:0)+(p.keen?1:0)+(p.whet?1.5:0)
     +(p.rally?1.5:0)+(p.toxify?1:0)-p.poison*1.5-p.delayed.length*3-p.inflame*1-sumB(p.debuffs)*0.5+p.hand.length*0.6+(p.max-30)*0.5;
-  G.players.forEach((o,j)=>{if(j===me)return;if(!o.alive||o.hp<=0){s+=40;return}
+  G.players.forEach((o,j)=>{if(j===me)return;if(G.cfg.team&&j%2===me%2){s+=o.alive&&o.hp>0?o.hp*0.8-o.poison:-30;return}if(!o.alive||o.hp<=0){s+=40;return}
     s-=o.hp*1.2-o.poison*1.5-o.delayed.length*3-o.inflame*1.2+o.shields.reduce((a,v)=>a+v,0)*0.5+o.mp*0.15+o.hand.length*0.3-(o.skip?6:0)-(o.snared?2:0)-sumB(o.debuffs)*0.5});
   return s}
 function cpuActions(){const p=cur(),acts=[];
@@ -675,7 +681,7 @@ const TURN_SEC=60;
 const FIXED={n:2,hp:30,hand:6,deckMode:'standard',deckSize:'set',custom:[]};
 const ICONS=['sword','shield','flame','drop','heart','star','bolt','orb','crown','skull','feather','eye','fang','leaf','meteor','wave'];
 const NET={off:false,ready:false,db:null,user:null,room:null,uid:null,me:null,meLoaded:false,peers:[],allCards:{},players:{},ranking:[],
-  queue:false,qSince:0,matchId:null,seat:null,isHost:false,mroom:null,unsubMatch:null,writing:false,pending:false,oppSeen:0,oppPeer:null,joinWait:null,
+  queue:false,qSince:0,matchId:null,seat:null,isHost:false,mroom:null,unsubMatch:null,writing:false,pending:false,seen:{},others:[],hostPeer:null,qFmt:'1v1',joinWait:null,
   spectating:false,unsubWatch:null,matches:[],watchListOn:false,ratedSet:new Set(),status:'接続を確認しています…'};
 const canOnline=()=>!!(NET.db&&NET.room&&NET.uid);
 const myName=()=>(NET.me&&NET.me.name)||'あなた';
@@ -694,34 +700,38 @@ async function netInit(){
   if(UI.screen==='watch')watchList();
   softRender();
 }
-function queuePeers(){const seen=new Set();
-  return NET.peers.filter(p=>p.kind==='viewer'&&p.presence&&p.presence.mode==='queue'&&typeof p.presence.uid==='string'&&typeof p.presence.since==='number')
+function queuePeers(f){const seen=new Set();
+  return NET.peers.filter(p=>p.kind==='viewer'&&p.presence&&p.presence.mode==='queue'&&(p.presence.fmt||'1v1')===(f||'1v1')&&typeof p.presence.uid==='string'&&typeof p.presence.since==='number')
     .slice().sort((a,b)=>(a.presence.since-b.presence.since)||(a.peer<b.peer?-1:1))
     .filter(p=>{if(seen.has(p.presence.uid))return false;seen.add(p.presence.uid);return true})}
 function tryPair(){
-  if(!NET.queue||NET.matchId)return;const q=queuePeers();const i=q.findIndex(p=>p.sameTab);if(i<0)return;
-  const j=i%2===0?i+1:i-1;if(j>=q.length)return;
-  const host=q[Math.min(i,j)],guest=q[Math.max(i,j)];
-  const mid=('m'+host.presence.since.toString(36)+'-'+host.peer.slice(0,12)+'-'+guest.peer.slice(0,12)).toLowerCase().replace(/[^a-z0-9_.-]/g,'').slice(0,48);
-  startMatch(mid,host,guest)}
-function startQueue(){if(!canOnline()||!NET.me)return;NET.queue=true;NET.qSince=Date.now();NET.status='対戦相手を探しています';
-  NET.room.presence({uid:NET.uid,mode:'queue',since:NET.qSince,match:null}).catch(()=>{});tryPair()}
+  if(!NET.queue||NET.matchId)return;const f=NET.qFmt,q=queuePeers(f);const i=q.findIndex(p=>p.sameTab);if(i<0)return;
+  let m;
+  if(f==='2v2'){const g=i-i%4;if(g+4>q.length)return;m=q.slice(g,g+4)}
+  else{const j=i%2===0?i+1:i-1;if(j>=q.length)return;m=[q[Math.min(i,j)],q[Math.max(i,j)]]}
+  const mid=('m'+m[0].presence.since.toString(36)+'-'+m[0].peer.slice(0,12)+'-'+m[1].peer.slice(0,12)).toLowerCase().replace(/[^a-z0-9_.-]/g,'').slice(0,48);
+  startMatch(mid,m)}
+function startQueue(f){if(!canOnline()||!NET.me)return;NET.queue=true;NET.qFmt=f==='2v2'?'2v2':'1v1';NET.qSince=Date.now();NET.status='対戦相手を探しています';
+  NET.room.presence({uid:NET.uid,mode:'queue',fmt:NET.qFmt,since:NET.qSince,match:null}).catch(()=>{});tryPair()}
 function stopQueue(){NET.queue=false;NET.room&&NET.room.presence({mode:'idle',since:null}).catch(()=>{})}
-async function startMatch(mid,host,guest){
-  NET.queue=false;NET.matchId=mid;NET.isHost=!!host.sameTab;NET.seat=NET.isHost?0:1;NET.oppPeer=NET.isHost?guest.peer:host.peer;NET.oppSeen=Date.now();
+async function startMatch(mid,members){
+  const team=members.length===4,me=members.findIndex(m=>m.sameTab);
+  NET.queue=false;NET.matchId=mid;NET.seat=me;NET.isHost=me===0;NET.hostPeer=members[0].peer;
+  NET.others=members.filter((_,i)=>i!==me).map(m=>m.peer);NET.seen={};NET.others.forEach(p=>{NET.seen[p]=Date.now()});
   UI.result=null;UI.waiting=false;NET.ratedSet.delete(mid);
   NET.room.presence({mode:'matched',match:mid,since:null}).catch(()=>{});
   try{NET.mroom=await NET.room.join(mid)}catch(e){NET.status='対戦部屋に入れませんでした。もう一度探してください';leaveMatch();return}
   NET.mroom.on('act',onAct,()=>{});
   NET.unsubMatch=NET.db.doc('matches/'+mid).onSnapshot(onMatchSnap,()=>{});
   if(NET.isHost){
-    const [hs,gs]=await Promise.all([NET.db.doc('players/'+host.presence.uid).get(),NET.db.doc('players/'+guest.presence.uid).get()]).catch(()=>[null,null]);
-    const hd=(hs&&hs.exists&&hs.data())||{},gd=(gs&&gs.exists&&gs.data())||{};
-    const [hc,gc]=await Promise.all([NET.db.doc('cards/'+host.presence.uid).get(),NET.db.doc('cards/'+guest.presence.uid).get()]).catch(()=>[null,null]);
-    const custom=[...capCards((hc&&hc.exists&&hc.data().list)||[]),...capCards((gc&&gc.exists&&gc.data().list)||[])];
-    newGame({...FIXED,custom,vs:'online',rated:true,names:[hd.name||'プレイヤーA',gd.name||'プレイヤーB']});
-    G.net={mid,host:{uid:host.presence.uid,peer:host.peer,name:hd.name||'',rating:hd.rating??1500,icon:hd.icon||'sword'},
-                guest:{uid:guest.presence.uid,peer:guest.peer,name:gd.name||'',rating:gd.rating??1500,icon:gd.icon||'sword'}};
+    const uids=members.map(m=>m.presence.uid);
+    const ps=await Promise.all(uids.map(u=>NET.db.doc('players/'+u).get())).catch(()=>[]);
+    const cs=await Promise.all(uids.map(u=>NET.db.doc('cards/'+u).get())).catch(()=>[]);
+    const pd=members.map((_,i)=>(ps[i]&&ps[i].exists&&ps[i].data())||{});
+    const custom=cs.flatMap(c=>capCards((c&&c.exists&&c.data().list)||[]));
+    newGame({...FIXED,...(team?{n:4,team:true}:{}),custom,vs:'online',rated:!team,names:pd.map((d,i)=>d.name||'プレイヤー'+'ABCD'[i])});
+    const seats=members.map((m,i)=>({uid:m.presence.uid,peer:m.peer,name:pd[i].name||'',rating:pd[i].rating??1500,icon:pd[i].icon||'sword'}));
+    G.net={mid,host:seats[0],guest:seats[1],seats};
     persist();
   }else{
     G=null;NET.joinWait=setTimeout(()=>{if(!G||!G.net||G.net.mid!==mid){NET.status='相手の準備ができませんでした。もう一度探してください';leaveMatch()}},15000);
@@ -738,7 +748,7 @@ async function persist(){
   if(NET.writing){NET.pending=true;return}
   NET.writing=true;
   try{do{NET.pending=false;
-      await NET.db.doc('matches/'+G.net.mid).set({mid:G.net.mid,status:G.over?'done':'playing',G:snapG(),host:G.net.host,guest:G.net.guest,
+      await NET.db.doc('matches/'+G.net.mid).set({mid:G.net.mid,status:G.over?'done':'playing',G:snapG(),host:G.net.host,guest:G.net.guest,seats:G.net.seats,
         winnerSeat:G.over?G.winnerSeat:null,turn:G.turn,updated:Date.now(),created:G.start})}while(NET.pending)}
   catch(e){NET.status='対戦の保存に失敗しました（'+(e&&e.code||'error')+'）'}
   NET.writing=false}
@@ -751,14 +761,15 @@ function onMatchSnap(s){
       if(NET.joinWait){clearTimeout(NET.joinWait);NET.joinWait=null}
       installCustom(G.cfg.custom);if(prev!==undefined&&G.stage&&G.stage!==prev)showStage(G.stage)}
   }else if(d.status==='done'&&G&&!G.over&&typeof d.winnerSeat==='number'){
-    G.over=d.winnerSeat>=0?G.players[d.winnerSeat].name:'引き分け';G.winnerSeat=d.winnerSeat;G.end=Date.now();G.phase='over';log('相手側で決着が記録されました')}
+    G.over=overName(d.winnerSeat);G.winnerSeat=d.winnerSeat;G.winTeam=d.winnerSeat;G.end=Date.now();G.phase='over';log('相手側で決着が記録されました')}
   if(G&&G.over)onOver();
   render()}
 function onAct(msg){
-  if(!NET.isHost||!G||G.over||!G.net||msg.peer!==G.net.guest.peer)return;
+  if(!NET.isHost||!G||G.over||!G.net)return;
+  const seat=G.net.seats.findIndex(s=>s.peer===msg.peer);if(seat<1)return;
   const a=msg.data||{};
-  if(a.type==='resign'){finishBy(0,`${G.players[1].name}が降参しました`);return}
-  if(G.cur!==1||a.seq!==G.seq)return;
+  if(a.type==='resign'){if(G.cfg.team)dropSeat(seat,`${G.players[seat].name}が降参しました`);else finishBy(0,`${G.players[1].name}が降参しました`);return}
+  if(G.cur!==seat||a.seq!==G.seq)return;
   applyAct(a);afterChange()}
 function applyAct(a){
   const p=cur(),i=Number.isInteger(a.i)?a.i:-1,t=Number.isInteger(a.t)?a.t:null;
@@ -779,12 +790,14 @@ function act(a){
   applyAct(a);afterChange()}
 function afterChange(){if(G&&G.cfg.vs==='online'){if(G.over)onOver();persist()}render()}
 function finishBy(seat,msg){if(!G||G.over)return;G.over=G.players[seat].name;G.winnerSeat=seat;G.end=Date.now();G.phase='over';log(msg);afterChange()}
+function dropSeat(s,msg){const p=G.players[s];if(!p||!p.alive||G.over)return;p.guts=p.phoenix=false;p.hp=0;log(msg);const turn=G.cur===s;if(!checkDeaths()&&turn)advance();afterChange()}
 function resign(){if(!G||G.over||G.cfg.vs!=='online')return;
-  if(NET.isHost)finishBy(1,`${G.players[0].name}が降参しました`);
+  if(NET.isHost){if(G.cfg.team)dropSeat(0,`${G.players[0].name}が降参しました`);else finishBy(1,`${G.players[0].name}が降参しました`)}
   else if(NET.mroom)NET.mroom.emit('act',{type:'resign'}).catch(()=>{})}
 function onOver(){
   if(!G||G.cfg.vs!=='online'||NET.spectating||!G.net)return;const mid=G.net.mid;
   if(NET.ratedSet.has(mid))return;NET.ratedSet.add(mid);
+  if(G.cfg.team){NET.room&&NET.room.presence({mode:'idle',match:null}).catch(()=>{});return}
   const st=getStats('online');if(st.hist.some(h=>h.mid===mid))return;
   const opp=NET.seat===0?G.net.guest:G.net.host;
   const S=G.winnerSeat==null||G.winnerSeat<0?.5:G.winnerSeat===NET.seat?1:0;
@@ -846,6 +859,8 @@ function boardHtml(){
   const vi=viewerIndex(),my=isHumanTurn(),online=G.cfg.vs==='online',spec=vi<0;
   const n=G.players.length,order=[];
   if(spec)for(let j=0;j<n;j++)order.push(j);else for(let s=1;s<n;s++)order.push((vi+s)%n);
+  if(G.cfg.team&&!spec)order.sort((a,b)=>(b%2===vi%2)-(a%2===vi%2));
+  const teamTag=j=>!G.cfg.team?'':spec?`<span class="teamtag">チーム${'AB'[j%2]}</span>`:j%2===vi%2?'<span class="teamtag ally">味方</span>':'<span class="teamtag">敵</span>';
   const st=G.stage?CARDS[G.stage]:null;
   let head=`<span class="pill">経過 <b class="num" id="clock">${fmt((G.end||Date.now())-G.start)}</b></span><span class="pill">ターン <b class="num">${G.turn}</b></span><span class="pill">山札 <b class="num">${G.deck.length}</b>${G.sudden?' ・サドンデス':''}</span>`;
   if(online&&!G.over)head+=`<span class="pill">残り <b class="num" id="tleft">${Math.max(0,TURN_SEC-Math.floor((Date.now()-(G.turnStart||Date.now()))/1000))}</b>秒</span>`;
@@ -853,10 +868,10 @@ function boardHtml(){
   if(spec)head+=`<button class="btn" data-act="stopwatch">観戦をやめる</button>`;
   else if(online)head+=G.over?`<button class="btn" data-act="leavematch">ロビーに戻る</button>`:`<button class="btn" data-act="resign">降参する</button>`;
   else head+=`<button class="btn" data-act="totitle">タイトルへ</button>`;
-  const seat=j=>{const o=G.players[j];return `<div class="seat ${o.alive?'':'dead'} ${j===G.cur&&!G.over?'turn':''}">
-    <div class="seat-h"><h3>${esc(o.name)}</h3>${o.alive?(j===G.cur&&!G.over?'<span class="tag">手番</span>':o.cpu?'<span class="cpu">CPU</span>':''):'<span class="sub">脱落</span>'}</div>
+  const seat=j=>{const o=G.players[j];return `<div class="seat ${o.alive?'':'dead'} ${j===G.cur&&!G.over?'turn':''} ${G.cfg.team&&!spec&&j%2===vi%2?'ally':''}">
+    <div class="seat-h"><h3>${teamTag(j)}${esc(o.name)}</h3>${o.alive?(j===G.cur&&!G.over?'<span class="tag">手番</span>':o.cpu?'<span class="cpu">CPU</span>':''):'<span class="sub">脱落</span>'}</div>
     ${bars(o)}<div class="chips">${chips(o,false)}</div><div class="sub">手札 ${o.hand.length}枚</div></div>`};
-  const label=online?(spec?'オンライン対戦を観戦中':'オンライン レート戦'):G.cfg.rated?'CPU レート戦':(G.cfg.label||'カスタム');
+  const label=online?(spec?'オンライン対戦を観戦中':G.cfg.team?'オンライン 2対2':'オンライン レート戦'):G.cfg.rated?'CPU レート戦':(G.cfg.label||'カスタム');
   let mePanel='';
   if(spec){mePanel=`<section class="me"><div class="me-h"><h2>観戦中</h2><span class="sub">手札と伏せ札の中身は見えません</span></div></section>`}
   else{
@@ -896,7 +911,8 @@ function overlays(){
     <div class="sub">伏せ札：${f.length?esc(f.join('・')):'なし'}</div>
     <div class="peek">${t.hand.map(c=>cardHtml(c,'','tabindex="-1"')).join('')||'<span class="sub">手札なし</span>'}</div></div></div>`}
   if(G.phase==='over'||G.over){const ms=(G.end||Date.now())-G.start,online=G.cfg.vs==='online';
-    const title=G.winnerSeat===-1?'引き分け':(vi>=0&&G.winnerSeat===vi?'あなたの勝ち':esc(G.over)+' の勝ち');
+    const won=vi>=0&&(G.cfg.team?G.cfg.vs!=='hot'&&G.winTeam===vi%2:G.winnerSeat===vi);
+    const title=G.winnerSeat===-1?'引き分け':(won?(G.cfg.team?'あなたのチームの勝ち':'あなたの勝ち'):esc(G.over)+' の勝ち');
     const r=UI.result;
     const btns=NET.spectating?`<button class="btn primary" data-act="stopwatch">観戦一覧へ</button>`
       :online?`<button class="btn primary" data-act="leavematch">ロビーに戻る</button>`
@@ -955,25 +971,25 @@ function onlineHtml(){
   else if(!NET.meLoaded)main='<p>プロフィールを読み込んでいます…</p>';
   else if(!NET.me)main=`<div class="notice">オンライン対戦にはプロフィール登録が必要です。</div><div class="actions"><button class="btn primary" data-act="go" data-s="profile">プロフィールを登録する</button></div>`;
   else{
-    const q=queuePeers().length,here=NET.peers.filter(p=>p.kind==='viewer').length;
-    main=NET.queue?`<div class="box"><h2 class="thinking">対戦相手を探しています…</h2><div class="sub">待っている人 ${q}人・ページを開いている人 ${here}人</div>
-      <div class="sub">相手が見つかると自動で対戦が始まります。対戦相手は選べません（待っている順に組み合わせます）。</div>
+    const q=queuePeers('1v1').length,q2=queuePeers('2v2').length,here=NET.peers.filter(p=>p.kind==='viewer').length;
+    main=NET.queue?`<div class="box"><h2 class="thinking">${NET.qFmt==='2v2'?'2対2の参加者':'対戦相手'}を探しています…</h2><div class="sub">待っている人 ${NET.qFmt==='2v2'?q2:q}人${NET.qFmt==='2v2'?'（4人そろうと開始）':''}・ページを開いている人 ${here}人</div>
+      <div class="sub">そろうと自動で対戦が始まります。相手と味方は選べません（待っている順に組み合わせます）。</div>
       <div class="actions"><button class="btn" data-act="unqueue">探すのをやめる</button></div></div>`
-    :`<div class="actions"><button class="btn primary big-btn" data-act="queue">対戦相手を探す</button></div>
-      <div class="sub">待っている人 ${q}人・ページを開いている人 ${here}人</div>`}
+    :`<div class="actions"><button class="btn primary big-btn" data-act="queue" data-f="1v1">1対1（レート戦）</button><button class="btn primary big-btn" data-act="queue" data-f="2v2">2対2（4人）</button></div>
+      <div class="sub">待っている人 1対1：${q}人・2対2：${q2}人／ページを開いている人 ${here}人</div>`}
   const mineN=canOnline()?capCards(myCards()).reduce((s,c)=>s+c.n,0):0;
   return `<div class="panel">${backBtn()}<h1 class="hero">オンライン対戦</h1>${profileChip('online')}
-    ${rulesBox('<li>1ターン60秒。時間切れで自動的にターン終了</li><li>30秒以上接続が切れると負け。降参もできます</li><li>勝敗で「オンラインレート」が上下します（CPUレートとは別）</li>',
+    ${rulesBox('<li>1ターン60秒。時間切れで自動的にターン終了</li><li>30秒以上接続が切れると負け。降参もできます</li><li>勝敗で「オンラインレート」が上下します（CPUレートとは別）</li><li>2対2は4人で戦うチーム戦です。レートは変わりません。接続が切れた人や降参した人だけ脱落し、味方は戦い続けます</li>',
       `両者の自作カードが山札に入ります（1人あたり合計${ONLINE_CARD_CAP}枚まで。あなたの分：${mineN}枚）`)}
     ${NET.me?'<div class="actions"><button class="btn small" data-act="go" data-s="custom">自作カードを作る・確認する</button></div>':''}${main}</div>`}
 function cpuHtml(){const r=getStats('cpu').rating,df=diffFor(r);
   return `<div class="panel">${backBtn()}<h1 class="hero">CPU対戦</h1>${profileChip('cpu')}
     ${rulesBox(`<li>対戦相手は「CPUレート」で自動決定：〜1399 やさしい／1400〜1649 ふつう／1650〜 つよい</li><li>勝敗で「CPUレート」が上下します（オンラインレートとは別）</li>`)}
     <div class="box"><div class="rating"><div><div class="sub">今回の相手</div><span class="tier">CPU（${LV[df].n}・${LV[df].r}）</span></div></div></div>
-    <div class="actions"><button class="btn primary big-btn" data-act="startcpu">対戦開始</button></div></div>`}
+    <div class="actions"><button class="btn primary big-btn" data-act="startcpu">対戦開始</button><button class="btn big-btn" data-act="startcpu2">2対2で遊ぶ（味方CPUと組む・レートなし）</button></div></div>`}
 function localHtml(){const c=UI.cfg;
   return `<div class="panel">${backBtn()}<h1 class="hero">ひとつの端末で</h1><p>1台の画面を交代で回して遊びます。ルールは標準（体力30・手札6枚・標準山札）、レーティングは変わりません。</p>
-  <div class="box"><div class="form"><label for="l-n">人数<select id="l-n">${[2,3,4].map(v=>`<option ${v===c.n?'selected':''}>${v}</option>`).join('')}</select></label></div>
+  <div class="box"><div class="form"><label for="l-n">人数<select id="l-n">${[2,3,4].map(v=>`<option ${!c.team&&v===c.n?'selected':''}>${v}</option>`).join('')}<option value="team" ${c.team?'selected':''}>2対2（1・3番 対 2・4番）</option></select></label></div>
   <div class="form">${[0,1,2,3].map(i=>`<label for="l-name${i}">プレイヤー${i+1}の名前<input id="l-name${i}" maxlength="12" value="${esc(c.names[i]||'プレイヤー'+(i+1))}"></label>`).join('')}</div></div>
   <div class="actions"><button class="btn primary big-btn" data-act="startlocal">対戦開始</button></div></div>`}
 function customHtml(){const c=UI.cfg,vc=c.vs==='cpu';installCustom([]);
@@ -984,7 +1000,7 @@ function customHtml(){const c=UI.cfg,vc=c.vs==='cpu';installCustom([]);
   <div class="box"><h2>ルール</h2><div class="form">
     <label for="f-vs">相手<select id="f-vs"><option value="cpu" ${vc?'selected':''}>CPU</option><option value="hot" ${vc?'':'selected'}>ひとつの端末で交代</option></select></label>
     <label for="f-diff">CPUの強さ<select id="f-diff">${Object.entries(LV).map(([k,v])=>`<option value="${k}" ${c.diff===k?'selected':''}>${v.n}</option>`).join('')}</select></label>
-    <label for="f-n">人数<select id="f-n">${[2,3,4].map(v=>`<option ${v===c.n?'selected':''}>${v}</option>`).join('')}</select></label>
+    <label for="f-n">人数<select id="f-n">${[2,3,4].map(v=>`<option ${!c.team&&v===c.n?'selected':''}>${v}</option>`).join('')}<option value="team" ${c.team?'selected':''}>2対2（1・3番 対 2・4番）</option></select></label>
     <label for="f-hp">体力<input id="f-hp" type="number" min="5" max="99" value="${c.hp}"></label>
     <label for="f-hand">最初の手札<input id="f-hand" type="number" min="3" max="10" value="${c.hand}"></label>
     <label for="f-mode">山札の作り方<select id="f-mode"><option value="standard" ${c.deckMode==='standard'?'selected':''}>標準（全種類入り）</option><option value="random" ${c.deckMode==='random'?'selected':''}>ランダム</option></select></label>
@@ -1033,7 +1049,7 @@ function watchHtml(){
   const ms=NET.matches;
   return `<div class="panel">${UI.watchOnly?'':backBtn()}<h1 class="hero">観戦</h1><p>いま行われているオンライン対戦を見られます。手札と伏せ札の中身は表示されません。</p>
     ${!NET.ready?'<p>接続を確認しています…</p>':!NET.db?`<div class="notice">${esc(NET.status)}</div>`:ms.length?`<div class="watch-list">${ms.map(m=>`<div class="watch-item">
-      <div class="vs">${avatar(m.host&&m.host.icon)}<b>${esc(m.host&&m.host.name||'?')}</b><span class="sub num">${m.host&&m.host.rating||''}</span><span class="vs-mark">VS</span>${avatar(m.guest&&m.guest.icon)}<b>${esc(m.guest&&m.guest.name||'?')}</b><span class="sub num">${m.guest&&m.guest.rating||''}</span></div>
+      <div class="vs">${avatar(m.host&&m.host.icon)}<b>${esc(m.seats&&m.seats.length===4?m.seats[0].name+'・'+m.seats[2].name:m.host&&m.host.name||'?')}</b><span class="sub num">${m.host&&m.host.rating||''}</span><span class="vs-mark">VS</span>${avatar(m.guest&&m.guest.icon)}<b>${esc(m.seats&&m.seats.length===4?m.seats[1].name+'・'+m.seats[3].name:m.guest&&m.guest.name||'?')}</b><span class="sub num">${m.guest&&m.guest.rating||''}</span></div>
       <span class="sub">ターン ${m.turn||1}</span><button class="btn primary small" data-act="watch" data-m="${esc(m.mid)}">観戦する</button></div>`).join('')}</div>`
       :'<p class="sub">いまは対戦が行われていません。始まると自動でここに表示されます。</p>'}
     <div class="sub">ランキング</div>${rankMini()}</div>`}
@@ -1047,6 +1063,7 @@ function catalogHtml(){
   return `<div class="panel wide"><div class="actions"><h2 style="font-size:22px">ルールとカード一覧</h2><span class="grow"></span><button class="btn primary" data-act="closecat">閉じる</button></div>
   <div class="box rules"><ul>
     <li>ターン開始時：遅効毒 → 毒ダメージ（その後毒−1）→ 再生 → MP+2 → 山札から1枚引く（手札の上限10枚）。もっと引きたいときはドローカードを使う。</li>
+    <li>2対2：1・3番と2・4番がチーム。敵味方が交互に動く。攻撃と全体攻撃は敵だけに当たり、相手チームを全員倒すと勝ち。</li>
     <li>1ターンにカードを最大2枚使える。1ターンに1枚まで、使わずに捨ててもよい。</li>
     <li>MPは最初5、毎ターン+2、最大10。必殺・魔法カードやショップでの購入に使う。</li>
     <li>カードショップには常に3枚並ぶ。1ターンに1枚までMPで買え、買ったカードはすぐ手札に入る（使用枠は消費しない）。MP1で品ぞろえを入れ替えられる。</li>
@@ -1125,18 +1142,20 @@ function artHtml(){
 
 /* ---------- start helpers ---------- */
 function readCustomCfg(){const c=UI.cfg,v=id=>{const el=$('#'+id);return el?el.value:''};
-  c.vs=v('f-vs')||'cpu';c.diff=v('f-diff')||'normal';c.n=+v('f-n')||2;c.hp=Math.max(5,Math.min(99,+v('f-hp')||30));c.hand=Math.max(3,Math.min(10,+v('f-hand')||6));
+  c.vs=v('f-vs')||'cpu';c.diff=v('f-diff')||'normal';c.team=v('f-n')==='team';c.n=c.team?4:+v('f-n')||2;c.hp=Math.max(5,Math.min(99,+v('f-hp')||30));c.hand=Math.max(3,Math.min(10,+v('f-hand')||6));
   c.deckMode=v('f-mode')||'standard';c.deckSize=v('f-size')||'set';
   const m=$('#f-mine'),a=$('#f-all');c.useMine=m?m.checked:true;c.useAll=a?a.checked:false;
   for(let i=0;i<4;i++){const x=v('f-name'+i).trim();c.names[i]=x||(i===0?myName():'プレイヤー'+(i+1))}}
 function startCustom(){readCustomCfg();const c=UI.cfg;
   const list=[...(c.useMine?myCards():[]),...(c.useAll?othersCards():[])].slice(0,60);
-  newGame({vs:c.vs==='cpu'?'cpu':'hot',rated:false,diff:c.diff,n:c.n,hp:c.hp,hand:c.hand,deckMode:c.deckMode,deckSize:c.deckSize,custom:list,names:c.names.slice()});UI.screen='game'}
+  newGame({vs:c.vs==='cpu'?'cpu':'hot',rated:false,diff:c.diff,n:c.n,team:!!c.team,label:c.team?'カスタム 2対2':undefined,hp:c.hp,hand:c.hand,deckMode:c.deckMode,deckSize:c.deckSize,custom:list,names:c.names.slice()});UI.screen='game'}
 function startCpuRated(){const df=diffFor(getStats('cpu').rating);
   newGame({...FIXED,vs:'cpu',rated:true,diff:df,names:[myName(),'CPU']});UI.screen='game'}
-function startLocal(){const c=UI.cfg;c.n=+($('#l-n')||{}).value||2;
+function startCpuTeam(){const df=diffFor(getStats('cpu').rating);
+  newGame({...FIXED,n:4,team:true,vs:'cpu',rated:false,diff:df,label:'CPU 2対2',names:[myName(),'','','']});UI.screen='game'}
+function startLocal(){const c=UI.cfg,lv=($('#l-n')||{}).value;c.team=lv==='team';c.n=c.team?4:+lv||2;
   for(let i=0;i<4;i++){const el=$('#l-name'+i);c.names[i]=(el&&el.value.trim())||'プレイヤー'+(i+1)}
-  newGame({...FIXED,vs:'hot',rated:false,label:'ひとつの端末で対戦',n:c.n,names:c.names.slice()});UI.screen='game'}
+  newGame({...FIXED,vs:'hot',rated:false,label:c.team?'ひとつの端末で 2対2':'ひとつの端末で対戦',n:c.n,team:!!c.team,names:c.names.slice()});UI.screen='game'}
 
 /* ---------- custom card maker ---------- */
 const CU_FIELDS=[['cost','必要MP',0,10],['dmg','ダメージ',0,15],['hits','攻撃回数',1,6],['poison','毒',0,8],['inflame','炎症ターン',0,5],['heal','回復',0,15],['shieldVal','盾の数値',0,6],['mp','MP回復',0,6],['atkUp','攻撃+（2ターン）',0,5],['self','自分へのダメージ',0,10],['draw','カードを引く',0,3],['n','山札の枚数',1,5]];
@@ -1163,6 +1182,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   else if(a==='catalog')UI.catalog=true;
   else if(a==='closecat')UI.catalog=false;
   else if(a==='startcpu')startCpuRated();
+  else if(a==='startcpu2')startCpuTeam();
   else if(a==='startlocal')startLocal();
   else if(a==='startcustom')startCustom();
   else if(a==='again'){const cfg=G.cfg;if(cfg.rated&&cfg.vs==='cpu')startCpuRated();else newGame(cfg)}
@@ -1179,7 +1199,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   else if(a==='artexport'){exportArt();return}
   else if(a==='artfiles'){saveArtFiles();return}
   else if(a==='artdel'){if(NET.db&&NET.canEdit)NET.db.doc('cardart/'+b.dataset.k).delete().catch(()=>{});return}
-  else if(a==='queue')startQueue();
+  else if(a==='queue')startQueue(b.dataset.f);
   else if(a==='unqueue'){stopQueue();NET.status='オンライン'}
   else if(a==='resign')resign();
   else if(a==='leavematch'){leaveMatch();return}
@@ -1197,12 +1217,16 @@ setInterval(()=>{
   if(!G)return;const el=$('#clock');if(el&&!G.end)el.textContent=fmt(Date.now()-G.start);
   if(G.cfg.vs!=='online'||G.over||NET.spectating)return;
   const left=Math.max(0,TURN_SEC-Math.floor((Date.now()-(G.turnStart||Date.now()))/1000));const tl=$('#tleft');if(tl)tl.textContent=left;
-  if(NET.mroom&&NET.mroom.peers().some(p=>p.peer===NET.oppPeer))NET.oppSeen=Date.now();
+  if(NET.mroom){const on=new Set(NET.mroom.peers().map(p=>p.peer));NET.others.forEach(o=>{if(on.has(o))NET.seen[o]=Date.now()})}
   if(NET.isHost&&left<=0){log(`${cur().name}の時間切れ`);advance();afterChange();return}
-  if(Date.now()-NET.oppSeen>30000){
-    if(NET.isHost)finishBy(0,'相手の接続が切れたため勝利');
-    else if(G.net){G.over=G.players[1].name;G.winnerSeat=1;G.end=Date.now();G.phase='over';log('相手の接続が切れたため勝利');
-      NET.db.doc('matches/'+G.net.mid).update({status:'done',winnerSeat:1,G:snapG(),updated:Date.now()}).catch(()=>{});onOver();render()}}
+  if(!G.net)return;const gone=p=>Date.now()-(NET.seen[p]||0)>30000;
+  if(NET.isHost){G.net.seats.forEach((s,i)=>{if(i===0||G.over||!G.players[i].alive||!gone(s.peer))return;
+      if(G.cfg.team)dropSeat(i,`${G.players[i].name}の接続が切れました`);else finishBy(0,'相手の接続が切れたため勝利')})}
+  else if(gone(NET.hostPeer)){
+    if(G.cfg.team){G.over='引き分け';G.winnerSeat=-1;G.winTeam=-1;log('部屋を管理している人の接続が切れたため、対戦を終了しました')}
+    else{G.over=G.players[1].name;G.winnerSeat=1;log('相手の接続が切れたため勝利')}
+    G.end=Date.now();G.phase='over';
+    NET.db.doc('matches/'+G.net.mid).update({status:'done',winnerSeat:G.winnerSeat,G:snapG(),updated:Date.now()}).catch(()=>{});onOver();render()}
 },1000);
 function routeHash(){if(location.hash==='#watch'){UI.screen='watch';UI.watchOnly=true;if(!G)render();watchList()}}
 window.addEventListener('hashchange',routeHash);
