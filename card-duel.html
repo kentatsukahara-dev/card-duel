@@ -9,7 +9,7 @@
   --felt:#18282e; --felt-2:#203339; --felt-3:#2a4249; --line:#3a555c; --glow:#2a4249;
   --ink:#eef0e8; --muted:#9db0b0; --brass:#d8b26a; --danger:#e25b4f; --ok:#6cc070; --mpc:#4fb3e8;
   --c-atk:#de5a4e; --c-def:#5f8fdc; --c-psn:#a073dc; --c-fire:#ec8a3c; --c-cure:#3fbcac;
-  --c-heal:#72c46a; --c-buff:#e2bb4c; --c-debuff:#9095ae; --c-stage:#c9a77c; --c-mp:#4fb3e8; --c-skill:#e05a98; --c-magic:#7a6cf2; --c-draw:#a9c04a;
+  --c-heal:#72c46a; --c-buff:#e2bb4c; --c-debuff:#9095ae; --c-stage:#c9a77c; --c-mp:#4fb3e8; --c-skill:#e05a98; --c-magic:#7a6cf2; --c-draw:#a9c04a; --c-team:#4fd0b8;
   --card:#f3efe4; --card-ink:#1d2528;
   --f-display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
   --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
@@ -146,7 +146,7 @@ textarea.paste{width:100%;min-height:90px;background:var(--felt-3);border:1px so
 .card .mine{position:absolute;right:6px;bottom:4px;font-size:10px;color:var(--cc);font-weight:700;letter-spacing:.06em}
 [data-cat=atk]{--cc:var(--c-atk)} [data-cat=def]{--cc:var(--c-def)} [data-cat=psn]{--cc:var(--c-psn)} [data-cat=fire]{--cc:var(--c-fire)}
 [data-cat=cure]{--cc:var(--c-cure)} [data-cat=heal]{--cc:var(--c-heal)} [data-cat=buff]{--cc:var(--c-buff)} [data-cat=debuff]{--cc:var(--c-debuff)}
-[data-cat=stage]{--cc:var(--c-stage)} [data-cat=mp]{--cc:var(--c-mp)} [data-cat=skill]{--cc:var(--c-skill)} [data-cat=magic]{--cc:var(--c-magic)} [data-cat=draw]{--cc:var(--c-draw)}
+[data-cat=stage]{--cc:var(--c-stage)} [data-cat=mp]{--cc:var(--c-mp)} [data-cat=skill]{--cc:var(--c-skill)} [data-cat=magic]{--cc:var(--c-magic)} [data-cat=draw]{--cc:var(--c-draw)} [data-cat=team]{--cc:var(--c-team)}
 .combo-chip{font-size:13px;font-weight:700;color:#fff;background:var(--c-skill);border-radius:6px;padding:4px 10px}
 .shop{border:1px solid color-mix(in srgb,var(--mpc) 55%,var(--line));border-radius:12px;padding:12px;background:color-mix(in srgb,var(--mpc) 7%,transparent);display:flex;flex-direction:column;gap:10px}
 .shop-h{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
@@ -208,8 +208,8 @@ textarea.paste{width:100%;min-height:90px;background:var(--felt-3);border:1px so
 <div id="app"></div>
 
 <script>
-const CATS={atk:'攻撃',buff:'強化',def:'防御',psn:'毒',fire:'炎症',heal:'回復',cure:'治療',mp:'MP',draw:'ドロー',skill:'必殺',magic:'魔法',debuff:'弱体',stage:'ステージ'};
-const PRICE={atk:2,buff:2,def:2,psn:2,fire:2,heal:2,cure:1,debuff:2,magic:2,skill:2,draw:1};
+const CATS={atk:'攻撃',buff:'強化',def:'防御',psn:'毒',fire:'炎症',heal:'回復',cure:'治療',mp:'MP',draw:'ドロー',skill:'必殺',magic:'魔法',debuff:'弱体',stage:'ステージ',team:'チーム'};
+const PRICE={team:2,atk:2,buff:2,def:2,psn:2,fire:2,heal:2,cure:1,debuff:2,magic:2,skill:2,draw:1};
 const HANDMAX=10;
 const MPMAX=10;
 const BASE={
@@ -294,6 +294,16 @@ const BASE={
   disarm:{name:'武器破壊',cat:'debuff',n:2,fx:'disarm',tg:1,text:'相手の強化をすべて消し、次のターン攻撃−1'},
   snare:{name:'足止め',cat:'debuff',n:2,fx:'snare',tg:1,text:'相手は次のターン1枚しか使えない'},
   silence:{name:'魔封じ',cat:'debuff',n:1,fx:'silence',tg:1,text:'相手のMPを0にする'},
+  /* チーム専用（team:1）。2対2の山札・ショップにだけ入る。ally:1 は味方を選んで使う */
+  aid:{name:'癒しの手',cat:'team',team:1,ally:1,n:5,fx:'aheal',text:'味方の体力+6'},
+  aguard:{name:'守護の盾',cat:'team',team:1,ally:1,n:4,fx:'aguard',text:'味方に数値4の盾を伏せる'},
+  amp:{name:'魔力の贈り物',cat:'team',team:1,ally:1,n:3,fx:'amp',text:'味方のMP+4'},
+  adraw:{name:'援軍補給',cat:'team',team:1,ally:1,n:3,fx:'adraw',text:'味方が2枚引く'},
+  acure:{name:'浄化の手',cat:'team',team:1,ally:1,n:3,fx:'acure',text:'味方の毒・炎症・弱体を消す'},
+  cover:{name:'かばう',cat:'team',team:1,ally:1,n:3,fx:'cover',text:'次の自分の番まで、味方への攻撃を1回だけ代わりに受ける'},
+  duo:{name:'連携突き',cat:'team',team:1,n:4,dmg:3,fx:'duo',text:'3ダメージ。味方が生きていれば+2'},
+  ring:{name:'癒しの輪',cat:'team',team:1,n:2,cost:3,fx:'ring',text:'自分と味方の体力+4'},
+  revive:{name:'蘇生',cat:'team',team:1,ally:1,n:2,cost:5,fx:'revive',text:'倒れた味方を体力10で復活させる'},
   st_swamp:{name:'毒沼',cat:'stage',n:1,text:'毒ダメージ+1。解毒薬が使えない'},
   st_volcano:{name:'火山',cat:'stage',n:1,text:'炎症が+1ターン長い。ターン開始時に全員1ダメージ'},
   st_sanct:{name:'聖域',cat:'stage',n:1,text:'回復量2倍。強打・捨て身が使えない'},
@@ -367,20 +377,24 @@ const ART={slash:'sword',kick:'fist',quick:'bolt',rush:'burst',breaker:'fist',ex
  twinfang:'fang',hundred:'fist',meteor:'meteor',hellfire:'flame',miasma:'skull',greatheal:'heart',quake:'burst',
  peek:'eye',alchemy:'flask',confuse:'star',curseback:'mirror',mirror:'mirror',balance:'scale',burst:'orb',timestop:'hourglass',
  intimidate:'down',disarm:'down',snare:'chain',silence:'chain',holysword:'sword',dragon:'heart',
+ aid:'heart',aguard:'shield',amp:'orb',adraw:'cards',acure:'cross',cover:'wall',duo:'swords',ring:'leaf',revive:'feather',
  st_swamp:'swamp',st_volcano:'volcano',st_sanct:'temple',st_fort:'castle',st_arena:'arena',st_spring:'wave'};
-const CATART={atk:'sword',buff:'up',def:'shield',psn:'drop',fire:'flame',heal:'heart',cure:'cross',mp:'orb',draw:'cards',skill:'star',magic:'eye',debuff:'down',stage:'temple'};
+const CATART={atk:'sword',buff:'up',def:'shield',psn:'drop',fire:'flame',heal:'heart',cure:'cross',mp:'orb',draw:'cards',skill:'star',magic:'eye',debuff:'down',stage:'temple',team:'heart'};
 const artSvg=(k,d)=>`<svg viewBox="0 0 64 64" aria-hidden="true">${GLYPH[ART[k]||CATART[d.cat]]||GLYPH.star}</svg>`;
 const price=d=>d.price??PRICE[d.cat]??2;
 const SV=[2,2,3,3,3,4,4,4];
 let cid=100000;const mk=k=>{const c={id:cid++,k};if(k==='shield')c.v=SV[Math.floor(Math.random()*SV.length)];return c};
-function fillShop(){const pool=Object.keys(CARDS).filter(k=>{const d=CARDS[k];return d.shopOnly||(d.n>0&&!['stage','mp'].includes(d.cat))});
+function fillShop(){const pool=Object.keys(CARDS).filter(k=>{const d=CARDS[k];if(d.team&&!G.cfg.team)return false;return d.shopOnly||(d.n>0&&!['stage','mp'].includes(d.cat))});
   while(G.shop.length<3)G.shop.push(mk(pool[Math.floor(Math.random()*pool.length)]))}
-function installCustom(list){CARDS={...BASE};(list||[]).forEach(c=>{if(c&&c.key&&String(c.key).startsWith('cu_'))CARDS[c.key]={...c,custom:1}})}
-const needsTarget=d=>!d.aoe&&!!(d.tg||d.dmg>0||d.poison>0||d.inflame>0);
+function installCustom(list){CARDS={...BASE};(list||[]).forEach(c=>{if(c&&c.key&&String(c.key).startsWith('cu_'))CARDS[c.key]={...c,custom:1,team:0,ally:0}})}
+const needsTarget=d=>!d.aoe&&!d.ally&&!!(d.tg||d.dmg>0||d.poison>0||d.inflame>0);
+/* 味方の席。dead=true なら「倒れていて、降参・切断で抜けていない味方」。チーム戦以外では必ず空 */
+const allySeats=(i,dead)=>G.cfg.team?G.players.map((_,j)=>j).filter(j=>j!==i&&j%2===i%2&&(dead?!G.players[j].alive&&!G.players[j].left:G.players[j].alive)):[];
+const allyTargets=d=>allySeats(G.cur,d.fx==='revive');
 const isAtk=d=>d.dmg>0;
 
 function buildDeck(cfg){
-  const keys=Object.keys(CARDS).filter(k=>CARDS[k].n>0);
+  const keys=Object.keys(CARDS).filter(k=>CARDS[k].n>0&&(!CARDS[k].team||cfg.team));
   const set=keys.flatMap(k=>Array(CARDS[k].n).fill(k));
   const size=cfg.deckSize==='set'?set.length:+cfg.deckSize;
   let list=[],types=keys.length;
@@ -394,7 +408,7 @@ function buildDeck(cfg){
   }else{while(list.length<size)list.push(...shuffle(set.slice()));list=list.slice(0,size)}
   return{deck:shuffle(list.map(mk)),types}}
 function newPlayer(name,hp){return{name,hp,max:hp,mp:5,rally:false,alive:true,hand:[],shields:[],counter:false,parry:false,wall:false,thorns:0,barrier:0,
-  poison:0,delayed:[],inflame:0,regen:0,buffs:[],debuffs:[],allin:false,keen:false,whet:false,toxify:false,guts:false,phoenix:false,mirror:false,skip:false,vuln:0,noAttack:false,pendingNoAttack:false,snared:false}}
+  poison:0,delayed:[],inflame:0,regen:0,buffs:[],debuffs:[],allin:false,keen:false,whet:false,toxify:false,guts:false,phoenix:false,mirror:false,skip:false,vuln:0,noAttack:false,pendingNoAttack:false,snared:false,coverBy:null,left:false}}
 function newGame(cfg){
   installCustom(cfg.custom);UI.result=null;UI.waiting=false;
   const bd=buildDeck(cfg);
@@ -455,12 +469,12 @@ function evalState(me){
   let s=p.hp*1.0+p.mp*0.25+p.shields.reduce((a,v)=>a+v,0)*0.6+(p.counter?1.5:0)+(p.parry?1.5:0)+(p.mirror?2:0)+(p.wall?3:0)
     +p.thorns*0.8+p.barrier*0.8+(p.guts?3:0)+(p.phoenix?6:0)+p.regen*1.5+sumB(p.buffs)*0.5+(p.allin?2:0)+(p.keen?1:0)+(p.whet?1.5:0)
     +(p.rally?1.5:0)+(p.toxify?1:0)-p.poison*1.5-p.delayed.length*3-p.inflame*1-sumB(p.debuffs)*0.5+p.hand.length*0.6+(p.max-30)*0.5;
-  G.players.forEach((o,j)=>{if(j===me)return;if(G.cfg.team&&j%2===me%2){s+=o.alive&&o.hp>0?o.hp*0.8-o.poison:-30;return}if(!o.alive||o.hp<=0){s+=40;return}
+  G.players.forEach((o,j)=>{if(j===me)return;if(G.cfg.team&&j%2===me%2){s+=o.alive&&o.hp>0?o.hp*0.8-o.poison*1.2-o.delayed.length*2-o.inflame*0.8-sumB(o.debuffs)*0.4+o.shields.reduce((a,v)=>a+v,0)*0.5+o.mp*0.3+o.hand.length*0.5+(o.coverBy!=null?(o.hp<=12?4:1):0):-30;return}if(!o.alive||o.hp<=0){s+=40;return}
     s-=o.hp*1.2-o.poison*1.5-o.delayed.length*3-o.inflame*1.2+o.shields.reduce((a,v)=>a+v,0)*0.5+o.mp*0.15+o.hand.length*0.3-(o.skip?6:0)-(o.snared?2:0)-sumB(o.debuffs)*0.5});
   return s}
 function cpuActions(){const p=cur(),acts=[];
   p.hand.forEach((c,i)=>{if(whyNot(c))return;const d=CARDS[c.k];
-    const tg=(d.aoe||(isAtk(d)&&p.rally)||!needsTarget(d))?[null]:neighbors(G.cur);tg.forEach(t=>acts.push({i,t}))});
+    const tg=d.ally?allyTargets(d):(d.aoe||(isAtk(d)&&p.rally)||!needsTarget(d))?[null]:neighbors(G.cur);tg.forEach(t=>acts.push({i,t}))});
   return acts}
 function simValue(a,me,depth){
   const snap=JSON.stringify(G),us=UI.sel,up=UI.peek,was=SIM;SIM=true;
@@ -484,12 +498,17 @@ function cpuBuy(){
   if(pick>=0)doBuy(pick)}
 function cpuStep(){
   const p=cur();if(!p.cpu||G.over)return;
-  G.cpuN++;if(G.cpuN===1)cpuBuy();
+  G.cpuN++;if(G.cpuN===1){cpuBuy();
+    /* 味方がいなくて使えないチーム用カードで手札が詰まらないように、1枚捨てる */
+    const w=p.hand.findIndex(c=>{const d=CARDS[c.k];return d.ally&&!allySeats(G.cur).length&&!allyTargets(d).length});
+    if(w>=0&&!G.discarded){const c=p.hand.splice(w,1)[0];G.discarded=true;log(`${p.name}は「${CARDS[c.k].name}」を捨てた`)}}
   const a=G.cpuN<=8?cpuChoose():null;
   if(a)play(a.i,a.t);else advance()}
 function scheduleCpu(){if(G&&!G.over&&cur().cpu&&!UI.cpuTimer&&!UI.catalog){UI.cpuTimer=setTimeout(()=>{UI.cpuTimer=null;if(!G||G.over||!cur().cpu)return;cpuStep();render()},G.cpuN?700:1000)}}
 function beginTurn(){
   G.notes=[];const p=cur();
+  G.players.forEach(o=>{if(o.coverBy===G.cur)o.coverBy=null});
+  if(G.cfg.team&&G.turn>=120&&!G.sudden){G.sudden=true;log('長期戦になった。サドンデス開始（毎ターン2ダメージ）')}
   p.delayed.forEach(d=>d.t--);
   p.delayed.filter(d=>d.t<=0).forEach(d=>{p.poison+=d.amt;log(`${p.name}の遅効毒が発動。毒+${d.amt}`)});
   p.delayed=p.delayed.filter(d=>d.t>0);
@@ -534,6 +553,8 @@ function inflameT(t,n,add){if(t.barrier>0){log(`${t.name}の結界が炎症を�
 const hasStatus=t=>t.poison>0||t.inflame>0||t.delayed.length>0;
 function whyNot(c){
   const p=cur(),d=CARDS[c.k];
+  if(d.team&&!G.cfg.team)return '2対2専用のカードです';
+  if(d.ally&&!allyTargets(d).length)return d.fx==='revive'?'復活させられる味方がいません':'味方が倒れているので使えません';
   if(G.played>=G.maxPlays&&!d.quick)return 'このターンはもうカードを使えません';
   if(d.solo&&G.played>0)return `${d.name}はターン最初の1枚としてしか使えません`;
   if(d.cost&&p.mp<effCost(d))return `MPが足りません（必要${effCost(d)}・今${p.mp}）`;
@@ -568,6 +589,7 @@ function hitOn(p,t,d,o){let total=0;
     if(d.fx==='chase'&&hasStatus(t))base+=3;
     if(d.fx==='rage')base+=Math.floor((p.max-p.hp)/5);
     if(d.fx==='rush'&&!t.shields.length)base+=2;
+    if(d.fx==='duo'&&allySeats(G.cur).length)base+=2;
     if(d.fx==='execute'&&t.hp<=10)base+=5;
     if(d.fx==='breaker'&&t.shields.length){log(`${t.name}の盾${t.shields.length}枚を砕いた`);t.shields=[]}
     const hits=d.fx==='flurry'?2+Math.floor(Math.random()*4):(d.hits||1);
@@ -580,6 +602,7 @@ function hitOn(p,t,d,o){let total=0;
 function drawN(p,n){let k=0;for(let i=0;i<n;i++){if(p.hand.length>=HANDMAX)break;if(draw(p))k++}if(k)log(`${p.name}は${k}枚引いた`)}
 function play(idx,ti){
   const p=cur(),c=p.hand[idx],d=CARDS[c.k];if(!c||whyNot(c))return;
+  if(d.ally&&!allyTargets(d).includes(ti))return;
   const combo=findCombo(d);
   p.hand.splice(idx,1);if(!d.quick)G.played++;if(d.solo)G.played=G.maxPlays;
   let t=ti!=null?G.players[ti]:null;
@@ -589,9 +612,10 @@ function play(idx,ti){
   if(d.cost){p.mp-=effCost(d)}
   let spent=0;if(d.costAll){spent=p.mp;p.mp=0}
   let total=0;const hitList=[];
-  const tl=aoe?neighbors(G.cur).map(j=>G.players[j]):(t?[t]:[]);
+  const tl=aoe?neighbors(G.cur).map(j=>G.players[j]):(t&&!d.ally?[t]:[]);
   let o={};if(isAtk(d)){o={double:p.allin,pierce:p.keen||d.pierce,whet:p.whet,heavy:d.heavy};p.allin=p.keen=p.whet=false}
-  tl.forEach(tt=>{if(isAtk(d)&&tt!==p&&tt.mirror){tt.mirror=false;log(`${tt.name}の鏡像が攻撃を跳ね返した`);tt=p}
+  tl.forEach(tt=>{if(isAtk(d)&&tt.coverBy!=null){const g=G.players[tt.coverBy];tt.coverBy=null;if(g.alive&&g.hp>0&&g!==p){log(`${g.name}が${tt.name}をかばった`);tt=g}}
+    if(isAtk(d)&&tt!==p&&tt.mirror){tt.mirror=false;log(`${tt.name}の鏡像が攻撃を跳ね返した`);tt=p}
     if(!aoe)t=tt;hitList.push(tt);total+=hitOn(p,tt,d,o)});
   if(d.lifesteal&&total>0)heal(p,total,d.name);
   if(d.heal)heal(p,d.heal,d.name);
@@ -637,6 +661,14 @@ function play(idx,ti){
     case'burst':hurt(t,spent,`魔力爆発 MP${spent}`);break;
     case'timestop':t.skip=true;log(`${t.name}の次のターンが止まる`);break;
     case'phoenix':p.phoenix=true;break;
+    case'aheal':heal(t,6,d.name);break;
+    case'aguard':t.shields.push(4);log(`${t.name}に守護の盾を伏せた`);break;
+    case'amp':{const g=gainMp(t,4);log(`${t.name}のMP+${g}`);break}
+    case'adraw':drawN(t,2);break;
+    case'acure':t.poison=0;t.delayed=[];t.inflame=0;t.debuffs=[];log(`${t.name}の毒・炎症・弱体が消えた`);break;
+    case'cover':t.coverBy=G.cur;log(`${p.name}は${t.name}をかばう構えをとった`);break;
+    case'ring':heal(p,4,d.name);allySeats(G.cur).forEach(j=>heal(G.players[j],4,d.name));break;
+    case'revive':Object.assign(t,{alive:true,hp:Math.min(t.max,10),poison:0,delayed:[],inflame:0,debuffs:[],skip:false,snared:false,coverBy:null});G.out=G.out.filter(j=>j!==ti);log(`${t.name}が復活した（体力${t.hp}）`);break;
     case'dragon':p.max+=5;p.hp+=5;log(`${p.name}の最大体力+5、体力+5`);break;
   }
   if(d.cat==='stage'){G.stage=c.k;log(`ステージが「${d.name}」に変わった`);if(!SIM){document.body.dataset.stage=c.k;showStage(c.k)}}
@@ -658,6 +690,7 @@ function chips(p,self){const r=[];
   if(p.allin)r.push(chip('渾身','buff'));if(p.keen)r.push(chip('鋭刃','buff'));if(p.whet)r.push(chip('研ぎ澄まし','buff'));if(p.rally)r.push(chip('号令','buff'));
   if(p.vuln>0)r.push(chip(`狂化 ${p.vuln}`,'atk'));if(p.toxify)r.push(chip('猛毒化','psn'));
   if(p.wall)r.push(chip('鉄壁','def'));if(p.thorns>0)r.push(chip(`茨 ${p.thorns}`,'def'));if(p.barrier>0)r.push(chip(`結界 ${p.barrier}`,'def'));
+  if(p.coverBy!=null&&G.players[p.coverBy])r.push(chip(`${G.players[p.coverBy].name}がかばう`,'team'));
   if(p.snared)r.push(chip('足止め','debuff'));if(p.noAttack||p.pendingNoAttack)r.push(chip('攻撃不可','debuff'));
   if(self){p.shields.forEach(v=>r.push(chip(`盾 ${v}`,'def','hidden')));if(p.counter)r.push(chip('反撃の構え','def','hidden'));if(p.parry)r.push(chip('受け流し','def','hidden'));if(p.mirror)r.push(chip('鏡像','magic','hidden'))}
   else{const f=p.shields.length+(p.counter?1:0)+(p.parry?1:0)+(p.mirror?1:0);if(f)r.push(chip(`伏せ札 ×${f}`,'def','hidden'))}
@@ -776,7 +809,7 @@ function applyAct(a){
   if(a.type==='play'&&i>=0&&i<p.hand.length){const d=CARDS[p.hand[i].k];
     const all=d.aoe||(isAtk(d)&&p.rally);
     if(needsTarget(d)&&!all&&!neighbors(G.cur).includes(t))return;
-    play(i,all||!needsTarget(d)?null:t)}
+    play(i,d.ally?t:all||!needsTarget(d)?null:t)}
   else if(a.type==='end')advance();
   else if(a.type==='buy'&&i>=0&&i<G.shop.length&&!whyNotBuy(i))doBuy(i);
   else if(a.type==='reroll'&&p.mp>=1){p.mp--;G.shop=[];fillShop();log(`${p.name}がショップの品ぞろえを入れ替えた`)}
@@ -790,7 +823,7 @@ function act(a){
   applyAct(a);afterChange()}
 function afterChange(){if(G&&G.cfg.vs==='online'){if(G.over)onOver();persist()}render()}
 function finishBy(seat,msg){if(!G||G.over)return;G.over=G.players[seat].name;G.winnerSeat=seat;G.end=Date.now();G.phase='over';log(msg);afterChange()}
-function dropSeat(s,msg){const p=G.players[s];if(!p||!p.alive||G.over)return;p.guts=p.phoenix=false;p.hp=0;log(msg);const turn=G.cur===s;if(!checkDeaths()&&turn)advance();afterChange()}
+function dropSeat(s,msg){const p=G.players[s];if(p)p.left=true;if(!p||!p.alive||G.over)return;p.guts=p.phoenix=false;p.hp=0;log(msg);const turn=G.cur===s;if(!checkDeaths()&&turn)advance();afterChange()}
 function resign(){if(!G||G.over||G.cfg.vs!=='online')return;
   if(NET.isHost){if(G.cfg.team)dropSeat(0,`${G.players[0].name}が降参しました`);else finishBy(1,`${G.players[0].name}が降参しました`)}
   else if(NET.mroom)NET.mroom.emit('act',{type:'resign'}).catch(()=>{})}
@@ -881,6 +914,7 @@ function boardHtml(){
     else if(sel){const d=CARDS[sel.k],why=whyNot(sel),cb=why?null:findCombo(d);
       if(why)actH=`<span class="why">${esc(why)}</span>`;
       else if(d.aoe||(isAtk(d)&&p.rally))actH=`<button class="btn primary" data-act="use">「${esc(d.name)}」を相手全員に使う</button>`;
+      else if(d.ally)actH=allyTargets(d).map(j=>`<button class="btn primary" data-act="use" data-t="${j}">「${esc(d.name)}」を ${esc(G.players[j].name)} に使う</button>`).join('');
       else if(needsTarget(d))actH=neighbors(G.cur).map(j=>`<button class="btn primary" data-act="use" data-t="${j}">「${esc(d.name)}」を ${esc(G.players[j].name)} に使う</button>`).join('');
       else actH=`<button class="btn primary" data-act="use">「${esc(d.name)}」を使う</button>`;
       if(cb)actH=`<span class="combo-chip">合わせ技「${esc(cb.name)}」発動：${esc(cb.text.split('：')[1])}${d.comboX2?'（2倍）':''}</span>`+actH;
@@ -1058,12 +1092,15 @@ function rankMini(){const rows=rankRows('online').slice(0,10);if(!rows.length)re
 function catalogHtml(){
   installCustom(G?G.cfg.custom:[]);
   const groups={};Object.keys(CATS).forEach(k=>groups[k]=[]);for(const k in CARDS)(groups[CARDS[k].cat]||(groups[CARDS[k].cat]=[])).push(k);
-  const total=Object.values(CARDS).reduce((s,d)=>s+d.n,0);
+  const inTeam=!!(G&&G.cfg.team),soloGame=!!(G&&!G.over&&!G.cfg.team);
+  if(soloGame)delete groups.team;
+  const total=Object.values(CARDS).reduce((s,d)=>s+(d.team&&!inTeam?0:d.n),0);
   groups.shop=[];Object.keys(groups).forEach(cat=>{if(cat==='shop')return;groups[cat]=groups[cat].filter(k=>{if(CARDS[k].shopOnly){groups.shop.push(k);return false}return true})});
   return `<div class="panel wide"><div class="actions"><h2 style="font-size:22px">ルールとカード一覧</h2><span class="grow"></span><button class="btn primary" data-act="closecat">閉じる</button></div>
   <div class="box rules"><ul>
     <li>ターン開始時：遅効毒 → 毒ダメージ（その後毒−1）→ 再生 → MP+2 → 山札から1枚引く（手札の上限10枚）。もっと引きたいときはドローカードを使う。</li>
     <li>2対2：1・3番と2・4番がチーム。敵味方が交互に動く。攻撃と全体攻撃は敵だけに当たり、相手チームを全員倒すと勝ち。</li>
+    <li>チームのカードは2対2の山札とショップにだけ入る。1対1や3人以上の対戦には出ない。降参や接続切れで抜けた味方は蘇生できない。2対2は120ターンを超えるとサドンデスになる。</li>
     <li>1ターンにカードを最大2枚使える。1ターンに1枚まで、使わずに捨ててもよい。</li>
     <li>MPは最初5、毎ターン+2、最大10。必殺・魔法カードやショップでの購入に使う。</li>
     <li>カードショップには常に3枚並ぶ。1ターンに1枚までMPで買え、買ったカードはすぐ手札に入る（使用枠は消費しない）。MP1で品ぞろえを入れ替えられる。</li>
@@ -1076,7 +1113,7 @@ function catalogHtml(){
   </ul></div>
   <div class="box rules"><b>合わせ技一覧</b><ul>${COMBOS.map(c=>`<li><b>${c.name}</b>　${c.text}</li>`).join('')}</ul></div>
   <div class="sub">山札 ${total}枚（右下が枚数。盾の数値は 2・3・4）</div>
-  ${Object.entries(groups).filter(([,ks])=>ks.length).map(([cat,ks])=>`<div class="cat-h" data-cat="${cat==='shop'?'mp':cat}"><h3>${cat==='shop'?'ショップ限定':CATS[cat]}</h3><span class="sub">${ks.length}種</span></div>
+  ${Object.entries(groups).filter(([,ks])=>ks.length).map(([cat,ks])=>`<div class="cat-h" data-cat="${cat==='shop'?'mp':cat}"><h3>${cat==='shop'?'ショップ限定':cat==='team'?'チーム（2対2専用）':CATS[cat]}</h3><span class="sub">${ks.length}種</span></div>
     <div class="cat-grid">${ks.map(k=>cardHtml({k},'','tabindex="-1"').replace('</button>',`<span class="cnt">${CARDS[k].shopOnly?'価格MP'+price(CARDS[k]):'×'+CARDS[k].n}</span></button>`)).join('')}</div>`).join('')}
   </div>`}
 
