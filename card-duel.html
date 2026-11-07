@@ -248,7 +248,7 @@ body.fx-shake #app{animation:fxShake .32s linear}
   .meta>.btn{margin-left:auto;min-height:32px;padding:2px 12px;font-size:13px}
   .mbtns{display:none}
   .mbtns.open{display:flex;flex-direction:column;gap:6px;position:absolute;right:0;top:100%;margin-top:4px;z-index:12;min-width:150px;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--felt-2);box-shadow:0 8px 24px rgba(0,0,0,.5)}
-  .board{flex:1;min-height:0;display:flex;flex-direction:column;gap:0}
+  .board{flex:1;min-height:0;display:flex;flex-direction:column;align-items:stretch;gap:0}
   .maincol{flex:1;min-height:0;gap:6px;overflow-y:auto}
   .opps{flex:none;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
   .opps::-webkit-scrollbar,.hand::-webkit-scrollbar{display:none}
@@ -280,8 +280,11 @@ body.fx-shake #app{animation:fxShake .32s linear}
   .hand .card .tx{font-size:11px;line-height:1.35;padding:0 6px 6px}
   .hand .card .val{top:20px;font-size:18px}
   .actions{gap:6px}
-  .actions .btn{padding:6px 12px}
-  .actions .btn[data-act=use]{flex:1 1 45%;min-width:0}
+  .actions .btn{flex:1 1 auto;padding:6px 12px;white-space:nowrap}
+  .actions .grow{display:none}
+  .actions .why,.actions>.sub,.actions>.thinking{flex:1 0 100%}
+  .actions .btn[data-act=use]{flex:1 1 100%;min-width:0;white-space:normal}
+  .actions:has(.btn[data-act=use]+.btn[data-act=use]) .btn[data-act=use]{flex-basis:45%}
   .combo-chip{flex:1 0 100%;font-size:12px;padding:3px 8px}
   .shopcol{display:none}
   .shopcol.open{display:block;position:fixed;left:0;right:0;bottom:0;top:auto;max-height:82vh;max-height:82dvh;overflow-y:auto;z-index:15;background:var(--felt);border-top:1px solid var(--brass);border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -296,6 +299,12 @@ body.fx-shake #app{animation:fxShake .32s linear}
   .shopcol .card .tx{font-size:11px;line-height:1.35;padding:0 6px 6px}
   .shopcol .btn.small{font-size:11px;padding:4px 4px}
   .shop-bg{display:block;position:fixed;inset:0;z-index:14;background:rgba(0,0,0,.55);border:0;padding:0}
+}
+@media (max-width:640px) and (min-height:660px){
+  .hand .card{flex-basis:136px}
+  .hand .card .art.pic,.hand .card .art{height:84px}
+  .hand .card .nm{font-size:14px}
+  .hand .card .tx{font-size:12px}
 }
 @media (max-height:520px) and (orientation:landscape){
   .maincol{display:grid;grid-template-columns:minmax(0,34%) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);overflow:hidden}
