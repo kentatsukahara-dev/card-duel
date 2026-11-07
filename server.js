@@ -1,4 +1,4 @@
-// 毒と炎のカード決闘 — 自前サーバー
+// デビルパーティー — 自前サーバー
 // ゲーム本体 card-duel.html はそのまま配信し、claude.ai の db / room / user と同じ形の
 // 仕組みを WebSocket で提供する（ブラウザ側は shim.js が受け持つ）。
 'use strict';
