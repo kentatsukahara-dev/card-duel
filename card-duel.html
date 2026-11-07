@@ -1,4 +1,4 @@
-<title>毒と炎のカード決闘</title>
+<title>デビルパーティー</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1036,7 +1036,7 @@ function boardHtml(){
       <div class="chips">${chips(p,true)}</div>
       <div class="hand">${p.hand.map((c,i)=>my?cardHtml(c,(UI.sel===i?'sel ':'')+(whyNot(c)?'no':''),`data-act="sel" data-i="${i}" aria-pressed="${UI.sel===i}"`):cardHtml(c,'','tabindex="-1"')).join('')||'<span class="sub">手札なし</span>'}</div>
       <div class="actions">${actH}<span class="grow"></span><button class="btn primary" data-act="end" ${my?'':'disabled'}>ターン終了</button></div></section>`}
-  return `<header class="top"><div><div class="sub">${label}</div><h1>毒と炎のカード決闘</h1></div><div class="meta">${head}</div></header>
+  return `<header class="top"><div><div class="sub">${label}</div><h1>デビルパーティー</h1></div><div class="meta">${head}</div></header>
   ${online&&NET.status&&!spec&&!G.over&&NET.status.includes('失敗')?`<div class="notice">${esc(NET.status)}</div>`:''}
   <div class="board ${spec?'spec':''}">
   ${spec?'':`<aside class="shopcol">${shopHtml()}</aside>`}
@@ -1092,7 +1092,7 @@ function titleHtml(){
   const online=NET.peers.filter(p=>p.kind==='viewer').length;
   return `<div class="panel title-panel">
     <div class="crest">${avatar('flame')}${avatar('drop')}${avatar('sword')}</div>
-    <h1 class="hero big">毒と炎のカード決闘</h1>
+    <h1 class="hero big">デビルパーティー</h1>
     <p class="lead">攻撃・毒・炎症・魔法を組み合わせて、相手の体力を削り切るカードバトル。</p>
     ${profileChip()}
     <div class="menu">
