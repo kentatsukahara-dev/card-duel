@@ -588,6 +588,65 @@ function whyNot(c){
   return ''}
 function showStage(k){const d=CARDS[k];const el=document.createElement('div');el.className='toast';
   el.innerHTML=`<div>${esc(d.name)}<small>${esc(d.text)}</small></div>`;document.body.appendChild(el);setTimeout(()=>el.remove(),1900)}
+/* ---------- 効果音（Web Audio で合成。音源ファイルは使わない） ---------- */
+const SND={ctx:null,out:null,nb:null,on:true};
+try{SND.on=localStorage.getItem('duel.sound')!=='off'}catch(e){}
+function sndInit(c){SND.ctx=c;const comp=c.createDynamicsCompressor(),g=c.createGain();g.gain.value=.6;g.connect(comp);comp.connect(c.destination);SND.out=g;
+  const b=c.createBuffer(1,c.sampleRate*2,c.sampleRate),a=b.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;SND.nb=b}
+function sndUnlock(){if(!SND.on)return;try{if(!SND.ctx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;sndInit(new A())}if(SND.ctx.state==='suspended')SND.ctx.resume()}catch(e){}}
+function sEnv(t,d,v,a){const g=SND.ctx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);g.connect(SND.out);return g}
+function sN(t,d,o){const c=SND.ctx,s=c.createBufferSource(),f=c.createBiquadFilter();s.buffer=SND.nb;s.loop=true;f.type=o.type||'bandpass';f.Q.value=o.q||1;f.frequency.setValueAtTime(o.f,t);if(o.f2)f.frequency.exponentialRampToValueAtTime(o.f2,t+d);
+  s.connect(f);f.connect(sEnv(t,d,o.v||.5,o.a||.004));s.start(t,Math.random());s.stop(t+d+.02)}
+function sT(t,d,o){const c=SND.ctx,s=c.createOscillator();s.type=o.w||'sine';s.frequency.setValueAtTime(o.f,t);if(o.f2)s.frequency.exponentialRampToValueAtTime(o.f2,t+d);s.connect(sEnv(t,d,o.v||.3,o.a||.004));s.start(t);s.stop(t+d+.02)}
+const sArp=(t,ns,gap,d,w,v)=>ns.forEach((f,i)=>sT(t+i*gap,d,{f,w,v}));
+const SR={
+  slash:t=>{sN(t,.16,{f:3800,f2:700,q:1.2,v:.7});sT(t,.1,{f:1400,f2:400,w:'sawtooth',v:.08})},
+  double:t=>{SR.slash(t);SR.slash(t+.13)},
+  stab:t=>{sN(t,.08,{f:5200,f2:1800,q:2,v:.55});sT(t,.09,{f:1900,f2:500,w:'triangle',v:.18})},
+  triple:t=>{[0,.1,.2].forEach(x=>SR.stab(t+x))},
+  flurry:t=>{for(let i=0;i<7;i++){sN(t+i*.065,.06,{f:1500,f2:300,v:.7});sT(t+i*.065,.06,{f:170,f2:70,v:.4})}},
+  heavy:t=>{sN(t,.24,{f:900,f2:90,type:'lowpass',v:.9});sT(t,.3,{f:140,f2:38,v:.7})},
+  shatter:t=>{SR.heavy(t);for(let i=0;i<7;i++)sT(t+.03+i*.03,.14,{f:1800+Math.random()*3200,w:'triangle',v:.09})},
+  whirl:t=>{sN(t,.3,{f:450,f2:2600,q:3,v:.7});sN(t+.24,.32,{f:2600,f2:450,q:3,v:.7})},
+  thunder:t=>{for(let i=0;i<6;i++)sN(t+i*.03+Math.random()*.02,.05,{f:5000,type:'highpass',v:.9});sN(t+.05,1.3,{f:500,f2:45,type:'lowpass',v:1,a:.02});sT(t+.05,1,{f:72,f2:28,v:.7})},
+  boom:t=>{sT(t,.3,{f:1300,f2:180,v:.16});sN(t+.28,.9,{f:1200,f2:50,type:'lowpass',v:1});sT(t+.28,.7,{f:95,f2:26,v:.8})},
+  quake:t=>{for(let i=0;i<7;i++)sT(t+i*.14,.2,{f:46+Math.random()*16,v:.6});sN(t,1.2,{f:170,f2:60,type:'lowpass',v:1,a:.08})},
+  fire:t=>{sN(t,.5,{f:500,f2:1500,q:.8,v:.55,a:.05});for(let i=0;i<7;i++)sN(t+.05+Math.random()*.4,.025,{f:3200,type:'highpass',v:.35})},
+  firebig:t=>{sN(t,1,{f:260,f2:1000,q:.6,v:.8,a:.1});sT(t,.7,{f:70,f2:40,v:.4});for(let i=0;i<14;i++)sN(t+Math.random()*.85,.03,{f:2800,type:'highpass',v:.4})},
+  poison:t=>{for(let i=0;i<6;i++){const u=t+i*.075,f=240+Math.random()*260;sT(u,.08,{f,f2:f*2.2,v:.22})}},
+  mist:t=>{sN(t,.95,{f:1500,f2:500,q:1.5,v:.45,a:.2});SR.poison(t+.2)},
+  heal:t=>sArp(t,[523,659,784,1047],.075,.4,'sine',.2),
+  bigheal:t=>{sArp(t,[523,659,784,1047,1319,1568],.075,.7,'sine',.17);sN(t+.2,.7,{f:7000,type:'highpass',v:.08,a:.1})},
+  cure:t=>{for(let i=0;i<5;i++)sT(t+i*.06,.1,{f:500+i*170,f2:1100+i*220,v:.15});sArp(t+.28,[1047,1568],.07,.32,'triangle',.11)},
+  shield:t=>{[880,1330,2110].forEach(f=>sT(t,.42,{f,w:'square',v:.05}));sN(t,.05,{f:3000,v:.5})},
+  wall:t=>{sT(t,.34,{f:190,f2:90,w:'square',v:.2});sN(t,.16,{f:700,f2:150,type:'lowpass',v:.9});sT(t+.04,.3,{f:620,w:'triangle',v:.1})},
+  thorn:t=>{for(let i=0;i<5;i++)sN(t+i*.05,.05,{f:3000+i*500,q:6,v:.55})},
+  horn:t=>{[220,277,330].forEach((f,i)=>sT(t+i*.02,.55,{f,w:'sawtooth',v:.09,a:.05}))},
+  buff:t=>{sT(t,.34,{f:280,f2:950,w:'triangle',v:.22});sArp(t+.26,[880,1320],.06,.24,'sine',.12)},
+  growl:t=>{sT(t,.62,{f:92,f2:55,w:'sawtooth',v:.3,a:.06});sT(t,.62,{f:97,f2:50,w:'sawtooth',v:.22,a:.06});sN(t,.55,{f:380,type:'lowpass',v:.5,a:.08})},
+  debuff:t=>{sT(t,.5,{f:520,f2:110,w:'triangle',v:.24});sT(t,.5,{f:548,f2:116,w:'triangle',v:.14})},
+  chain:t=>{for(let i=0;i<6;i++)sT(t+i*.07,.09,{f:1700+(i%3)*520,w:'square',v:.05})},
+  mp:t=>{sArp(t,[1175,1568,1760,2349],.09,.42,'sine',.12);sT(t,.5,{f:294,f2:588,v:.12})},
+  drain:t=>{sT(t,.48,{f:1400,f2:130,v:.2});sN(t,.42,{f:2400,f2:300,q:4,v:.35})},
+  magic:t=>{for(let i=0;i<9;i++)sT(t+i*.05,.26,{f:620*Math.pow(1.122,i*(i%2?1:1.5)),v:.08});sN(t,.55,{f:2800,q:6,v:.16,a:.1})},
+  draw:t=>{sN(t,.06,{f:4200,f2:1700,q:1,v:.4});sN(t+.1,.06,{f:4600,f2:1900,q:1,v:.4})},
+  time:t=>{for(let i=0;i<4;i++)sT(t+i*.13,.04,{f:1500,w:'square',v:.1});sT(t+.52,.55,{f:880,f2:90,v:.2})},
+  phoenix:t=>{sN(t,.7,{f:300,f2:3600,q:1,v:.55,a:.1});sArp(t+.34,[659,988,1319],.08,.56,'triangle',.14)},
+  set:t=>{sN(t,.07,{f:1300,f2:520,q:1,v:.45});sT(t,.08,{f:190,f2:110,v:.2})},
+};
+const SND_MAP={slash:'slash vampire venomblade',double:'twin joint twinfang venomfang',triple:'triple combo',flurry:'flurry hundred',stab:'quick pierce chase duo',heavy:'kick rush smash reckless execute rage',
+  shatter:'breaker disarm',whirl:'whirl',thunder:'burst holysword',boom:'meteor detonate',quake:'quake',fire:'ember burn spread flameblade',firebig:'firerain hellfire st_volcano',poison:'needle delayed toxify thousand',
+  mist:'miasma st_swamp',heal:'potion regen aid convert ring prayer',bigheal:'bigpotion greatheal revive panacea st_sanct',cure:'antidote cool acure',shield:'aguard cover',wall:'wall st_fort',thorn:'thorns',
+  horn:'rally fury allin st_arena',buff:'keen whet guts',growl:'berserk dragon intimidate',debuff:'curseback',chain:'snare',mp:'meditate focus amp st_spring',drain:'manadrain silence',
+  magic:'peek alchemy confuse balance barrier',draw:'supply spark council rebuild adraw plunder',time:'timestop',phoenix:'phoenix'};
+const SND_CARD={};Object.entries(SND_MAP).forEach(([r,s])=>s.split(' ').forEach(k=>SND_CARD[k]=r));
+const SND_CAT={atk:'slash',psn:'poison',fire:'fire',heal:'heal',cure:'cure',def:'shield',buff:'buff',debuff:'debuff',mp:'mp',magic:'magic',draw:'draw',skill:'heavy',team:'heal',stage:'magic'};
+function sndCard(f){if(!SND.on||!SND.ctx||SND.ctx.state!=='running'||document.hidden)return;
+  try{const t=SND.ctx.currentTime+.02,r=!f.k?'set':SND_CARD[f.k]||SND_CAT[f.cat]||'slash';
+    if(f.stage){SR[r](t);return}
+    sN(t,.12,{f:900,f2:2600,q:1,v:.22});SR[r](t+.34);if(f.combo)sArp(t+.1,[784,1047,1319],.05,.22,'triangle',.12)}catch(e){}}
+function sndToggle(){SND.on=!SND.on;try{localStorage.setItem('duel.sound',SND.on?'on':'off')}catch(e){}sndUnlock()}
+document.addEventListener('pointerdown',sndUnlock);document.addEventListener('keydown',sndUnlock);
 /* ---------- カードを使ったときの演出（G.fx を見て全員の画面で再生する） ---------- */
 const FX_KIND={atk:'slash',psn:'rise',fire:'rise',heal:'rise',cure:'rise',team:'rise',buff:'burst',mp:'burst',draw:'burst',skill:'burst',def:'ring',magic:'ring',debuff:'fall'};
 function fxTick(){if(!G||SIM||typeof document.createElement!=='function')return;const f=G.fx;
@@ -602,7 +661,7 @@ function fxParts(root,kind,r){const R=(a,b)=>a+Math.random()*(b-a),cx=r.x,cy=r.y
   if(kind==='ring'){for(let i=0;i<3;i++)fxAdd(root,'fx-ring',`left:${cx}px;top:${cy}px;--s:${150+i*70}px;--dl:${.34+i*.1}s`);return}
   for(let i=0;i<16;i++){const dx=kind==='burst'?R(-130,130):R(-30,30),dy=kind==='burst'?R(-130,130):kind==='fall'?R(50,120):R(-150,-60);
     fxAdd(root,'fx-dot',`left:${cx+R(-70,70)}px;top:${cy+(kind==='fall'?R(-50,0):R(-10,40))}px;--s:${R(5,12)}px;--dx:${dx}px;--dy:${dy}px;--dl:${R(.34,.6)}s`)}}
-function fxShow(f){const by=fxRect(f.by),ts=(f.t&&f.t.length?f.t:[f.by]).map(fxRect),w=window.innerWidth,h=window.innerHeight,mx=w/2,my=h*.46,tg=ts[0];
+function fxShow(f){sndCard(f);if(f.stage)return;const by=fxRect(f.by),ts=(f.t&&f.t.length?f.t:[f.by]).map(fxRect),w=window.innerWidth,h=window.innerHeight,mx=w/2,my=h*.46,tg=ts[0];
   const root=fxAdd(document.body,'fxl',`--fx:var(--c-${f.cat||'stage'})`);
   fxAdd(root,'fx-glow','');
   const card=fxAdd(root,'fx-card',`--sx:${by.x-mx}px;--sy:${by.y-my}px;--tx:${tg.x-mx}px;--ty:${tg.y-my}px`);
@@ -723,8 +782,8 @@ function play(idx,ti){
   if(d.cat==='stage'){G.stage=c.k;log(`ステージが「${d.name}」に変わった`);if(!SIM){document.body.dataset.stage=c.k;showStage(c.k)}}
   if(combo&&p.alive&&p.hp>0)applyCombo(p,combo,d,aoe?hitList:(t?[t]:[]));
   if(d.cat!=='stage')G.lastCat=catKey(d);
-  if(!SIM&&d.cat!=='stage'){const hid=d.shieldVal||['shield','counter','parry','mirror'].includes(d.fx),seats=(hitList.length?hitList:t?[t]:[]).map(o=>G.players.indexOf(o));
-    G.fxN=(G.fxN||0)+1;G.fx={n:G.fxN,by,k:hid?null:c.k,v:hid?0:(c.v||0),cat:hid?'def':catKey(d),t:seats,d:G.players.map((o,j)=>Math.max(o.hp,0)-Math.max(hp0[j],0)),combo:combo?combo.name:null}}
+  if(!SIM){const hid=d.shieldVal||['shield','counter','parry','mirror'].includes(d.fx),seats=(hitList.length?hitList:t?[t]:[]).map(o=>G.players.indexOf(o));
+    G.fxN=(G.fxN||0)+1;G.fx={n:G.fxN,by,k:hid?null:c.k,v:hid?0:(c.v||0),cat:hid?'def':catKey(d),t:seats,d:G.players.map((o,j)=>Math.max(o.hp,0)-Math.max(hp0[j],0)),combo:combo?combo.name:null,stage:d.cat==='stage'?1:0}}
   UI.sel=null;checkDeaths();
 }
 
@@ -949,7 +1008,7 @@ function boardHtml(){
   const st=G.stage?CARDS[G.stage]:null;
   let head=`<span class="pill">経過 <b class="num" id="clock">${fmt((G.end||Date.now())-G.start)}</b></span><span class="pill">ターン <b class="num">${G.turn}</b></span><span class="pill">山札 <b class="num">${G.deck.length}</b>${G.sudden?' ・サドンデス':''}</span>`;
   if(online&&!G.over)head+=`<span class="pill">残り <b class="num" id="tleft">${Math.max(0,TURN_SEC-Math.floor((Date.now()-(G.turnStart||Date.now()))/1000))}</b>秒</span>`;
-  head+=`<button class="btn" data-act="catalog">ルール</button>`;
+  head+=`<button class="btn" data-act="sound">音 ${SND.on?'あり':'なし'}</button><button class="btn" data-act="catalog">ルール</button>`;
   if(spec)head+=`<button class="btn" data-act="stopwatch">観戦をやめる</button>`;
   else if(online)head+=G.over?`<button class="btn" data-act="leavematch">ロビーに戻る</button>`:`<button class="btn" data-act="resign">降参する</button>`;
   else head+=`<button class="btn" data-act="totitle">タイトルへ</button>`;
@@ -1268,6 +1327,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   UI.err='';if(a!=='saveprofile'&&a!=='cuadd'&&a!=='cudel')UI.msg='';
   if(a==='go'){UI.screen=b.dataset.s;if(UI.screen==='watch')watchList()}
   else if(a==='totitle'){if(UI.cpuTimer){clearTimeout(UI.cpuTimer);UI.cpuTimer=null}G=null;UI.screen='title';if(NET.queue)stopQueue()}
+  else if(a==='sound')sndToggle();
   else if(a==='catalog')UI.catalog=true;
   else if(a==='closecat')UI.catalog=false;
   else if(a==='startcpu')startCpuRated();
