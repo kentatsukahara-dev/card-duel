@@ -202,6 +202,28 @@ textarea.paste{width:100%;min-height:90px;background:var(--felt-3);border:1px so
 .toast div{font-family:var(--f-display);font-size:clamp(34px,9vw,72px);color:var(--glow);text-shadow:0 0 30px color-mix(in srgb,var(--glow) 60%,transparent);animation:stageIn 1.8s ease forwards;text-align:center}
 .toast small{display:block;font-family:var(--f-body);font-size:16px;color:var(--ink);text-shadow:none}
 @keyframes stageIn{0%{opacity:0;transform:scale(.9)}20%{opacity:1;transform:scale(1)}75%{opacity:1}100%{opacity:0;transform:scale(1.04)}}
+.fxl{position:fixed;inset:0;pointer-events:none;z-index:35;overflow:hidden}
+.fx-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 46%,color-mix(in srgb,var(--fx) 34%,transparent),transparent 58%);animation:fxGlow 1s ease forwards}
+.fx-card{position:absolute;left:50%;top:46%;width:clamp(132px,30vw,190px);opacity:0;filter:drop-shadow(0 0 22px var(--fx));animation:fxCard 1s cubic-bezier(.2,.8,.3,1) forwards}
+.fx-card .card{width:100%;pointer-events:none;margin:0}
+.fx-back{display:grid;place-items:center;aspect-ratio:3/4;border-radius:12px;border:2px solid var(--fx);background:repeating-linear-gradient(45deg,#1b2a33 0 10px,#223743 10px 20px);color:var(--ink);font-weight:700}
+.fx-cap{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:8px;white-space:nowrap;padding:3px 12px;border-radius:99px;background:rgba(0,0,0,.72);color:var(--ink);font-size:13px}
+.fx-combo{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:8px;white-space:nowrap;font-family:var(--f-display);font-size:clamp(18px,4.4vw,28px);color:var(--brass);text-shadow:0 0 14px var(--fx),0 2px 4px #000}
+.fx-hit{position:absolute;border-radius:14px;background:var(--fx);opacity:0;animation:fxHit .5s ease-out .38s forwards}
+.fx-slash{position:absolute;height:5px;border-radius:9px;background:linear-gradient(90deg,transparent,#fff 45%,var(--fx) 70%,transparent);opacity:0;animation:fxSlash .3s ease-out var(--dl) forwards}
+.fx-dot{position:absolute;width:var(--s);height:var(--s);border-radius:50%;background:var(--fx);box-shadow:0 0 10px var(--fx);opacity:0;animation:fxDot .62s ease-out var(--dl) forwards}
+.fx-ring{position:absolute;width:var(--s);height:var(--s);border:3px solid var(--fx);border-radius:50%;box-shadow:0 0 16px var(--fx);opacity:0;animation:fxRing .6s ease-out var(--dl) forwards}
+.fx-num{position:absolute;font-family:var(--f-display);font-size:clamp(30px,7vw,54px);text-shadow:0 0 12px #000,0 2px 3px #000;opacity:0;animation:fxNum .62s ease-out .4s forwards}
+.fx-num.minus{color:#ff6a5c}.fx-num.plus{color:#8fe884}
+body.fx-shake #app{animation:fxShake .32s linear}
+@keyframes fxGlow{0%{opacity:0}25%{opacity:1}70%{opacity:.8}100%{opacity:0}}
+@keyframes fxCard{0%{opacity:0;transform:translate(calc(-50% + var(--sx)),calc(-50% + var(--sy))) scale(.45) rotate(-6deg)}24%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}34%{transform:translate(-50%,-50%) scale(1)}72%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(.5)}}
+@keyframes fxHit{0%{opacity:.75}100%{opacity:0}}
+@keyframes fxSlash{0%{opacity:1;transform:rotate(var(--r)) scaleX(0)}55%{opacity:1;transform:rotate(var(--r)) scaleX(1)}100%{opacity:0;transform:rotate(var(--r)) scaleX(1)}}
+@keyframes fxDot{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.3)}}
+@keyframes fxRing{0%{opacity:1;transform:translate(-50%,-50%) scale(.3)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+@keyframes fxNum{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}25%{opacity:1;transform:translate(-50%,-60%) scale(1.2)}70%{opacity:1;transform:translate(-50%,-80%) scale(1)}100%{opacity:0;transform:translate(-50%,-115%) scale(1)}}
+@keyframes fxShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-1px)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:.01s!important}}
 </style>
 
@@ -504,7 +526,7 @@ function cpuStep(){
     if(w>=0&&!G.discarded){const c=p.hand.splice(w,1)[0];G.discarded=true;log(`${p.name}は「${CARDS[c.k].name}」を捨てた`)}}
   const a=G.cpuN<=8?cpuChoose():null;
   if(a)play(a.i,a.t);else advance()}
-function scheduleCpu(){if(G&&!G.over&&cur().cpu&&!UI.cpuTimer&&!UI.catalog){UI.cpuTimer=setTimeout(()=>{UI.cpuTimer=null;if(!G||G.over||!cur().cpu)return;cpuStep();render()},G.cpuN?700:1000)}}
+function scheduleCpu(){if(G&&!G.over&&cur().cpu&&!UI.cpuTimer&&!UI.catalog){UI.cpuTimer=setTimeout(()=>{UI.cpuTimer=null;if(!G||G.over||!cur().cpu)return;cpuStep();render()},G.cpuN?1150:1300)}}
 function beginTurn(){
   G.notes=[];const p=cur();
   G.players.forEach(o=>{if(o.coverBy===G.cur)o.coverBy=null});
@@ -566,6 +588,33 @@ function whyNot(c){
   return ''}
 function showStage(k){const d=CARDS[k];const el=document.createElement('div');el.className='toast';
   el.innerHTML=`<div>${esc(d.name)}<small>${esc(d.text)}</small></div>`;document.body.appendChild(el);setTimeout(()=>el.remove(),1900)}
+/* ---------- カードを使ったときの演出（G.fx を見て全員の画面で再生する） ---------- */
+const FX_KIND={atk:'slash',psn:'rise',fire:'rise',heal:'rise',cure:'rise',team:'rise',buff:'burst',mp:'burst',draw:'burst',skill:'burst',def:'ring',magic:'ring',debuff:'fall'};
+function fxTick(){if(!G||SIM||typeof document.createElement!=='function')return;const f=G.fx;
+  if(UI.fxId!==G.start){UI.fxId=G.start;UI.fxN=f?f.n:0;UI.fxQ=[];return}
+  if(!f||f.n<=UI.fxN)return;UI.fxN=f.n;UI.fxQ.push(f);if(UI.fxQ.length>2)UI.fxQ.shift();if(!UI.fxBusy)fxNext()}
+function fxNext(){const f=UI.fxQ&&UI.fxQ.shift();if(!f||!G){UI.fxBusy=false;return}UI.fxBusy=true;try{fxShow(f)}catch(e){console.error(e)}setTimeout(fxNext,1020)}
+function fxRect(j){const el=document.querySelector(`[data-seat="${j}"]`),w=window.innerWidth,h=window.innerHeight;
+  if(!el)return{x:w/2,y:h*.46,l:0,t:0,w:0,h:0,none:true};const r=el.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2,l:r.left,t:r.top,w:r.width,h:r.height}}
+function fxAdd(root,cls,css,html){const e=document.createElement('div');e.className=cls;e.style.cssText=css;if(html)e.textContent=html;root.appendChild(e);return e}
+function fxParts(root,kind,r){const R=(a,b)=>a+Math.random()*(b-a),cx=r.x,cy=r.y;
+  if(kind==='slash'){for(let i=0;i<3;i++){const w=Math.max(150,Math.min(r.w||220,320));fxAdd(root,'fx-slash',`left:${cx-w/2}px;top:${cy+(i-1)*20}px;width:${w}px;--r:${-28+i*26}deg;--dl:${.36+i*.07}s`)}return}
+  if(kind==='ring'){for(let i=0;i<3;i++)fxAdd(root,'fx-ring',`left:${cx}px;top:${cy}px;--s:${150+i*70}px;--dl:${.34+i*.1}s`);return}
+  for(let i=0;i<16;i++){const dx=kind==='burst'?R(-130,130):R(-30,30),dy=kind==='burst'?R(-130,130):kind==='fall'?R(50,120):R(-150,-60);
+    fxAdd(root,'fx-dot',`left:${cx+R(-70,70)}px;top:${cy+(kind==='fall'?R(-50,0):R(-10,40))}px;--s:${R(5,12)}px;--dx:${dx}px;--dy:${dy}px;--dl:${R(.34,.6)}s`)}}
+function fxShow(f){const by=fxRect(f.by),ts=(f.t&&f.t.length?f.t:[f.by]).map(fxRect),w=window.innerWidth,h=window.innerHeight,mx=w/2,my=h*.46,tg=ts[0];
+  const root=fxAdd(document.body,'fxl',`--fx:var(--c-${f.cat||'stage'})`);
+  fxAdd(root,'fx-glow','');
+  const card=fxAdd(root,'fx-card',`--sx:${by.x-mx}px;--sy:${by.y-my}px;--tx:${tg.x-mx}px;--ty:${tg.y-my}px`);
+  if(f.k){const d=CARDS[f.k];if(d){card.innerHTML=cardHtml({k:f.k,v:f.v},'','tabindex="-1" aria-hidden="true"');card.firstChild.disabled=true}}
+  if(!card.firstChild)fxAdd(card,'fx-back','','伏せ札');
+  const pn=G.players[f.by];if(pn)fxAdd(card,'fx-cap','',pn.name);
+  if(f.combo)fxAdd(card,'fx-combo','',`合わせ技「${f.combo}」`);
+  ts.forEach(r=>{if(!r.none)fxAdd(root,'fx-hit',`left:${r.l}px;top:${r.t}px;width:${r.w}px;height:${r.h}px`);fxParts(root,FX_KIND[f.cat]||'burst',r)});
+  (f.d||[]).forEach((n,j)=>{if(!n)return;const r=fxRect(j);fxAdd(root,'fx-num '+(n<0?'minus':'plus'),`left:${r.x}px;top:${r.y}px`,(n>0?'+':'−')+Math.abs(n))});
+  const hurtN=(f.d||[]).some(n=>n<0);
+  if(hurtN&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches))setTimeout(()=>{document.body.classList.add('fx-shake');setTimeout(()=>document.body.classList.remove('fx-shake'),340)},400);
+  setTimeout(()=>root.remove(),1050)}
 const catKey=d=>isAtk(d)?'atk':d.cat;
 const COMBOS=[
   {name:'連携攻撃',from:['atk'],to:'atk',dmg:2,text:'攻撃 → 攻撃：追加2ダメージ（盾無視）'},
@@ -603,7 +652,7 @@ function drawN(p,n){let k=0;for(let i=0;i<n;i++){if(p.hand.length>=HANDMAX)break
 function play(idx,ti){
   const p=cur(),c=p.hand[idx],d=CARDS[c.k];if(!c||whyNot(c))return;
   if(d.ally&&!allyTargets(d).includes(ti))return;
-  const combo=findCombo(d);
+  const combo=findCombo(d),hp0=G.players.map(o=>o.hp),by=G.cur;
   p.hand.splice(idx,1);if(!d.quick)G.played++;if(d.solo)G.played=G.maxPlays;
   let t=ti!=null?G.players[ti]:null;
   const aoe=!!(d.aoe||(isAtk(d)&&p.rally));
@@ -674,6 +723,8 @@ function play(idx,ti){
   if(d.cat==='stage'){G.stage=c.k;log(`ステージが「${d.name}」に変わった`);if(!SIM){document.body.dataset.stage=c.k;showStage(c.k)}}
   if(combo&&p.alive&&p.hp>0)applyCombo(p,combo,d,aoe?hitList:(t?[t]:[]));
   if(d.cat!=='stage')G.lastCat=catKey(d);
+  if(!SIM&&d.cat!=='stage'){const hid=d.shieldVal||['shield','counter','parry','mirror'].includes(d.fx),seats=(hitList.length?hitList:t?[t]:[]).map(o=>G.players.indexOf(o));
+    G.fxN=(G.fxN||0)+1;G.fx={n:G.fxN,by,k:hid?null:c.k,v:hid?0:(c.v||0),cat:hid?'def':catKey(d),t:seats,d:G.players.map((o,j)=>Math.max(o.hp,0)-Math.max(hp0[j],0)),combo:combo?combo.name:null}}
   UI.sel=null;checkDeaths();
 }
 
@@ -886,6 +937,7 @@ function render(){
     cuPreview();return}
   lastScreen='game';
   app.innerHTML=boardHtml();
+  fxTick();
   scheduleCpu();
 }
 function boardHtml(){
@@ -901,7 +953,7 @@ function boardHtml(){
   if(spec)head+=`<button class="btn" data-act="stopwatch">観戦をやめる</button>`;
   else if(online)head+=G.over?`<button class="btn" data-act="leavematch">ロビーに戻る</button>`:`<button class="btn" data-act="resign">降参する</button>`;
   else head+=`<button class="btn" data-act="totitle">タイトルへ</button>`;
-  const seat=j=>{const o=G.players[j];return `<div class="seat ${o.alive?'':'dead'} ${j===G.cur&&!G.over?'turn':''} ${G.cfg.team&&!spec&&j%2===vi%2?'ally':''}">
+  const seat=j=>{const o=G.players[j];return `<div class="seat ${o.alive?'':'dead'} ${j===G.cur&&!G.over?'turn':''} ${G.cfg.team&&!spec&&j%2===vi%2?'ally':''}" data-seat="${j}">
     <div class="seat-h"><h3>${teamTag(j)}${esc(o.name)}</h3>${o.alive?(j===G.cur&&!G.over?'<span class="tag">手番</span>':o.cpu?'<span class="cpu">CPU</span>':''):'<span class="sub">脱落</span>'}</div>
     ${bars(o)}<div class="chips">${chips(o,false)}</div><div class="sub">手札 ${o.hand.length}枚</div></div>`};
   const label=online?(spec?'オンライン対戦を観戦中':G.cfg.team?'オンライン 2対2':'オンライン レート戦'):G.cfg.rated?'CPU レート戦':(G.cfg.label||'カスタム');
@@ -920,7 +972,7 @@ function boardHtml(){
       if(cb)actH=`<span class="combo-chip">合わせ技「${esc(cb.name)}」発動：${esc(cb.text.split('：')[1])}${d.comboX2?'（2倍）':''}</span>`+actH;
       actH+=`<button class="btn" data-act="discard" ${G.discarded?'disabled':''}>捨てる${G.discarded?'（済）':''}</button>`}
     else actH='<span class="sub">カードを選んでください</span>';
-    mePanel=`<section class="me"><div class="me-h"><h2>${esc(p.name)}${my?' の番':''}</h2><div class="bars">${bars(p)}</div>
+    mePanel=`<section class="me" data-seat="${G.players.indexOf(p)}"><div class="me-h"><h2>${esc(p.name)}${my?' の番':''}</h2><div class="bars">${bars(p)}</div>
       ${my?`<span class="pill">使用 <b class="num">${G.played} / ${G.maxPlays}</b></span><span class="pill">直前 <b>${G.lastCat?CATS[G.lastCat]:'なし'}</b></span>`:''}</div>
       <div class="chips">${chips(p,true)}</div>
       <div class="hand">${p.hand.map((c,i)=>my?cardHtml(c,(UI.sel===i?'sel ':'')+(whyNot(c)?'no':''),`data-act="sel" data-i="${i}" aria-pressed="${UI.sel===i}"`):cardHtml(c,'','tabindex="-1"')).join('')||'<span class="sub">手札なし</span>'}</div>
