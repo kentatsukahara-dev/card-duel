@@ -224,6 +224,88 @@ body.fx-shake #app{animation:fxShake .32s linear}
 @keyframes fxRing{0%{opacity:1;transform:translate(-50%,-50%) scale(.3)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
 @keyframes fxNum{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}25%{opacity:1;transform:translate(-50%,-60%) scale(1.2)}70%{opacity:1;transform:translate(-50%,-80%) scale(1)}100%{opacity:0;transform:translate(-50%,-115%) scale(1)}}
 @keyframes fxShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-1px)}}
+/* スマホ用: 幅が狭い端末では1画面に収める（上に相手、中に状況、下に手札）。ショップは下から出す */
+.mob-only{display:none}
+.mbtns{display:contents}
+@media (hover:none){.card:not(.sel):hover,.mbtn:hover{transform:none}}
+@media (max-width:640px),(max-height:520px) and (orientation:landscape){
+  button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .mob-only{display:inline-flex;align-items:center;justify-content:center}
+  .pc-only{display:none}
+  .form input,.form select{font-size:16px}
+  .btn{min-height:40px}
+  .btn.small{min-height:34px}
+  #app{padding-block:10px 24px;gap:12px}
+  .menu{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .mbtn{padding:10px 12px}.mbtn b{font-size:16px}.mbtn span{font-size:12px}
+  .lead{font-size:14px}
+  body[data-view=game]{overflow:hidden}
+  body[data-view=game] #app{height:100vh;height:100dvh;overflow:hidden;gap:6px;padding-block:max(6px,env(safe-area-inset-top,0px)) max(6px,env(safe-area-inset-bottom,0px));padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+  .top{position:relative;flex:none;flex-wrap:nowrap}
+  .top>div:first-child{display:none}
+  .meta{flex:1;flex-wrap:nowrap;gap:6px;min-width:0}
+  .meta .pill{padding:2px 8px;font-size:12px;white-space:nowrap}
+  .meta>.btn{margin-left:auto;min-height:32px;padding:2px 12px;font-size:13px}
+  .mbtns{display:none}
+  .mbtns.open{display:flex;flex-direction:column;gap:6px;position:absolute;right:0;top:100%;margin-top:4px;z-index:12;min-width:150px;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--felt-2);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  .board{flex:1;min-height:0;display:flex;flex-direction:column;gap:0}
+  .maincol{flex:1;min-height:0;gap:6px;overflow-y:auto}
+  .opps{flex:none;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+  .opps::-webkit-scrollbar,.hand::-webkit-scrollbar{display:none}
+  .seat{flex:1 0 31%;min-width:112px;padding:6px 8px;gap:2px;border-radius:10px}
+  .seat-h h3{font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .seat .sub{font-size:11px}
+  .hp{gap:4px}.hp .num{min-width:42px;font-size:11px}.hp .lb{width:16px;font-size:10px}
+  .bar{height:8px}.bar.mp{height:5px}
+  .chips:has(>.sub:only-child){display:none}
+  .chip{font-size:11px;padding:0 6px}
+  .mid{flex:1;min-height:64px;grid-template-columns:minmax(0,34%) minmax(0,1fr);gap:6px}
+  .stage{padding:6px 8px;border-radius:10px;overflow:hidden;font-size:11px;line-height:1.35}
+  .stage-thumb{display:none}
+  .stage .sub{font-size:10px}
+  .stage h3{font-size:14px;margin:0 0 2px}
+  .log{max-height:none;min-height:0;padding:4px 8px;font-size:12px;border-radius:10px}
+  .me{flex:none;padding:8px;gap:6px;border-radius:12px}
+  .me-h{gap:4px 8px;flex-wrap:wrap}
+  .me-h h2{font-size:15px;flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .me-h .pill{padding:1px 8px;font-size:11px;white-space:nowrap}
+  .bars{order:3;flex:1 0 100%;flex-direction:row;gap:10px;min-width:0;max-width:none}
+  .bars .hp{flex:1;min-width:0}
+  .hand{display:flex;gap:8px;overflow-x:auto;padding:7px 4px 3px;margin:-3px -4px 0;scroll-snap-type:x proximity;scrollbar-width:none}
+  .hand .card{flex:0 0 118px;min-height:0;scroll-snap-align:start}
+  .hand .card .art.pic,.hand .card .art{height:58px}
+  .hand .card .art svg{width:34px;height:34px}
+  .hand .card .band{font-size:10px;padding:2px 6px}
+  .hand .card .nm{font-size:13px;padding:4px 6px 1px}
+  .hand .card .tx{font-size:11px;line-height:1.35;padding:0 6px 6px}
+  .hand .card .val{top:20px;font-size:18px}
+  .actions{gap:6px}
+  .actions .btn{padding:6px 12px}
+  .actions .btn[data-act=use]{flex:1 1 45%;min-width:0}
+  .combo-chip{flex:1 0 100%;font-size:12px;padding:3px 8px}
+  .shopcol{display:none}
+  .shopcol.open{display:block;position:fixed;left:0;right:0;bottom:0;top:auto;max-height:82vh;max-height:82dvh;overflow-y:auto;z-index:15;background:var(--felt);border-top:1px solid var(--brass);border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .shopcol .shop{border:0;border-radius:0;background:none;gap:8px}
+  .shopcol .shop-h{flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px}
+  .shopcol .shop-h h3{flex:1}
+  .shopcol .shop-h .sub{order:3;flex:1 0 100%}
+  .shopcol .shop-h .btn[data-act=reroll]{order:4;flex:1 0 100%}
+  .shopcol .shop-row{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .shopcol .card .art.pic,.shopcol .card .art{height:62px}
+  .shopcol .card .nm{font-size:13px;padding:4px 6px 1px}
+  .shopcol .card .tx{font-size:11px;line-height:1.35;padding:0 6px 6px}
+  .shopcol .btn.small{font-size:11px;padding:4px 4px}
+  .shop-bg{display:block;position:fixed;inset:0;z-index:14;background:rgba(0,0,0,.55);border:0;padding:0}
+}
+@media (max-height:520px) and (orientation:landscape){
+  .maincol{display:grid;grid-template-columns:minmax(0,34%) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);overflow:hidden}
+  .opps{grid-column:1;grid-row:1;flex-wrap:wrap}
+  .mid{grid-column:1;grid-row:2;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);min-height:0}
+  .stage div:last-child{display:none}
+  .me{grid-column:2;grid-row:1/3;min-height:0;overflow-y:auto}
+  .hand .card .art.pic,.hand .card .art{height:44px}
+  .shopcol.open{left:12%;right:12%;max-height:92vh;max-height:92dvh}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:.01s!important}}
 </style>
 
@@ -814,7 +896,7 @@ const avatar=icon=>`<span class="av"><svg viewBox="0 0 64 64" aria-hidden="true"
 function whyNotBuy(i){const p=cur(),c=G.shop[i];if(!c)return 'なし';const d=CARDS[c.k];
   if(G.bought)return 'このターンはもう買いました';if(p.mp<price(d))return 'MP不足';return ''}
 function shopHtml(){const my=isHumanTurn(),p=cur();
-  return `<section class="shop"><div class="shop-h"><h3>カードショップ</h3><span class="sub">MPで1ターンに1枚買える。買ったカードは手札に入る</span>
+  return `<section class="shop"><div class="shop-h"><h3>カードショップ</h3><button class="btn small mob-only" data-act="shopclose">閉じる</button><span class="sub">MPで1ターンに1枚買える。買ったカードは手札に入る</span>
     <button class="btn small" data-act="reroll" ${p.mp<1||!my?'disabled':''}>品ぞろえを入れ替える（MP1）</button></div>
     <div class="shop-row">${G.shop.map((c,i)=>{const w=my?whyNotBuy(i):'相手の番',pr=price(CARDS[c.k]||{});return `<div class="shop-item">${cardHtml(c,'','tabindex="-1"')}
       <button class="btn ${w?'':'primary'} small" data-act="buy" data-i="${i}" ${w?'disabled':''}>MP ${pr} で買う${w?`（${w}）`:''}</button></div>`}).join('')}</div></section>`}
@@ -987,7 +1069,7 @@ let lastScreen='';
 function softRender(){const ae=document.activeElement;if(ae&&ae.closest&&ae.closest('#app')&&/INPUT|SELECT|TEXTAREA/.test(ae.tagName))return;render()}
 function render(){
   const app=$('#app');if(!app)return;
-  document.body.dataset.stage=G&&G.stage?G.stage:'';
+  document.body.dataset.stage=G&&G.stage?G.stage:'';document.body.dataset.view=G?'game':'';
   if(!G){
     const keep=lastScreen===UI.screen,vals={};
     if(keep&&typeof document.querySelectorAll==='function')document.querySelectorAll('#app input,#app select,#app textarea').forEach(el=>{if(el.id)vals[el.id]=el.type==='checkbox'||el.type==='radio'?el.checked:el.value});
@@ -995,7 +1077,9 @@ function render(){
     if(keep&&typeof document.getElementById==='function')for(const id in vals){const el=document.getElementById(id);if(el){if(el.type==='checkbox'||el.type==='radio')el.checked=vals[id];else el.value=vals[id]}}
     cuPreview();return}
   lastScreen='game';
+  const keepSc=['.hand','.opps','.log','.shopcol'].map(q=>{const el=document.querySelector(q);return el?[q,el.scrollLeft,el.scrollTop]:null}).filter(Boolean);
   app.innerHTML=boardHtml();
+  keepSc.forEach(([q,l,t])=>{const el=document.querySelector(q);if(el){el.scrollLeft=l;el.scrollTop=t}});
   fxTick();
   scheduleCpu();
 }
@@ -1006,12 +1090,13 @@ function boardHtml(){
   if(G.cfg.team&&!spec)order.sort((a,b)=>(b%2===vi%2)-(a%2===vi%2));
   const teamTag=j=>!G.cfg.team?'':spec?`<span class="teamtag">チーム${'AB'[j%2]}</span>`:j%2===vi%2?'<span class="teamtag ally">味方</span>':'<span class="teamtag">敵</span>';
   const st=G.stage?CARDS[G.stage]:null;
-  let head=`<span class="pill">経過 <b class="num" id="clock">${fmt((G.end||Date.now())-G.start)}</b></span><span class="pill">ターン <b class="num">${G.turn}</b></span><span class="pill">山札 <b class="num">${G.deck.length}</b>${G.sudden?' ・サドンデス':''}</span>`;
+  let head=`<span class="pill pc-only">経過 <b class="num" id="clock">${fmt((G.end||Date.now())-G.start)}</b></span><span class="pill">ターン <b class="num">${G.turn}</b></span><span class="pill">山札 <b class="num">${G.deck.length}</b>${G.sudden?' ・サドンデス':''}</span>`;
   if(online&&!G.over)head+=`<span class="pill">残り <b class="num" id="tleft">${Math.max(0,TURN_SEC-Math.floor((Date.now()-(G.turnStart||Date.now()))/1000))}</b>秒</span>`;
-  head+=`<button class="btn" data-act="sound">音 ${SND.on?'あり':'なし'}</button><button class="btn" data-act="catalog">ルール</button>`;
-  if(spec)head+=`<button class="btn" data-act="stopwatch">観戦をやめる</button>`;
-  else if(online)head+=G.over?`<button class="btn" data-act="leavematch">ロビーに戻る</button>`:`<button class="btn" data-act="resign">降参する</button>`;
-  else head+=`<button class="btn" data-act="totitle">タイトルへ</button>`;
+  let tools=`<button class="btn" data-act="sound">音 ${SND.on?'あり':'なし'}</button><button class="btn" data-act="catalog">ルール</button>`;
+  if(spec)tools+=`<button class="btn" data-act="stopwatch">観戦をやめる</button>`;
+  else if(online)tools+=G.over?`<button class="btn" data-act="leavematch">ロビーに戻る</button>`:`<button class="btn" data-act="resign">降参する</button>`;
+  else tools+=`<button class="btn" data-act="totitle">タイトルへ</button>`;
+  head+=`<button class="btn mob-only" data-act="menu" aria-expanded="${!!UI.menu}">メニュー</button><span class="mbtns ${UI.menu?'open':''}">${tools}</span>`;
   const seat=j=>{const o=G.players[j];return `<div class="seat ${o.alive?'':'dead'} ${j===G.cur&&!G.over?'turn':''} ${G.cfg.team&&!spec&&j%2===vi%2?'ally':''}" data-seat="${j}">
     <div class="seat-h"><h3>${teamTag(j)}${esc(o.name)}</h3>${o.alive?(j===G.cur&&!G.over?'<span class="tag">手番</span>':o.cpu?'<span class="cpu">CPU</span>':''):'<span class="sub">脱落</span>'}</div>
     ${bars(o)}<div class="chips">${chips(o,false)}</div><div class="sub">手札 ${o.hand.length}枚</div></div>`};
@@ -1035,11 +1120,11 @@ function boardHtml(){
       ${my?`<span class="pill">使用 <b class="num">${G.played} / ${G.maxPlays}</b></span><span class="pill">直前 <b>${G.lastCat?CATS[G.lastCat]:'なし'}</b></span>`:''}</div>
       <div class="chips">${chips(p,true)}</div>
       <div class="hand">${p.hand.map((c,i)=>my?cardHtml(c,(UI.sel===i?'sel ':'')+(whyNot(c)?'no':''),`data-act="sel" data-i="${i}" aria-pressed="${UI.sel===i}"`):cardHtml(c,'','tabindex="-1"')).join('')||'<span class="sub">手札なし</span>'}</div>
-      <div class="actions">${actH}<span class="grow"></span><button class="btn primary" data-act="end" ${my?'':'disabled'}>ターン終了</button></div></section>`}
+      <div class="actions">${actH}<span class="grow"></span><button class="btn mob-only" data-act="shopopen">ショップ</button><button class="btn primary" data-act="end" ${my?'':'disabled'}>ターン終了</button></div></section>`}
   return `<header class="top"><div><div class="sub">${label}</div><h1>デビルパーティー</h1></div><div class="meta">${head}</div></header>
   ${online&&NET.status&&!spec&&!G.over&&NET.status.includes('失敗')?`<div class="notice">${esc(NET.status)}</div>`:''}
   <div class="board ${spec?'spec':''}">
-  ${spec?'':`<aside class="shopcol">${shopHtml()}</aside>`}
+  ${spec?'':`${UI.shopOpen&&!G.over?'<button class="shop-bg mob-only" data-act="shopclose" aria-label="ショップを閉じる"></button>':''}<aside class="shopcol ${UI.shopOpen&&!G.over?'open':''}">${shopHtml()}</aside>`}
   <div class="maincol">
   <section class="opps">${order.map(seat).join('')}</section>
   <section class="mid"><div class="stage">${G.stage&&(hasArt(G.stage)||hasArt("bg_"+G.stage))?`<div class="stage-thumb art-${G.stage}"></div>`:''}<div class="sub">ステージ</div><h3>${st?esc(st.name):'平原'}</h3><div>${st?esc(st.text):'特別な効果なし'}</div></div>
@@ -1324,10 +1409,13 @@ document.addEventListener('input',e=>{if(e.target.id&&e.target.id.startsWith('cu
 document.addEventListener('change',e=>{if(e.target.id&&e.target.id.startsWith('cu-'))cuPreview()});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const a=b.dataset.act;
   if(['sel','use','discard','end','buy','reroll'].includes(a)&&!isHumanTurn())return;
-  UI.err='';if(a!=='saveprofile'&&a!=='cuadd'&&a!=='cudel')UI.msg='';
+  UI.err='';if(a!=='saveprofile'&&a!=='cuadd'&&a!=='cudel')UI.msg='';if(a!=='menu'&&a!=='sound')UI.menu=false;
   if(a==='go'){UI.screen=b.dataset.s;if(UI.screen==='watch')watchList()}
   else if(a==='totitle'){if(UI.cpuTimer){clearTimeout(UI.cpuTimer);UI.cpuTimer=null}G=null;UI.screen='title';if(NET.queue)stopQueue()}
   else if(a==='sound')sndToggle();
+  else if(a==='menu')UI.menu=!UI.menu;
+  else if(a==='shopopen')UI.shopOpen=true;
+  else if(a==='shopclose')UI.shopOpen=false;
   else if(a==='catalog')UI.catalog=true;
   else if(a==='closecat')UI.catalog=false;
   else if(a==='startcpu')startCpuRated();
@@ -1339,8 +1427,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   else if(a==='sel'){const i=+b.dataset.i;UI.sel=UI.sel===i?null:i}
   else if(a==='use'){act({type:'play',i:UI.sel,t:b.dataset.t!=null?+b.dataset.t:null});UI.sel=null;return}
   else if(a==='discard'){act({type:'discard',i:UI.sel});UI.sel=null;return}
-  else if(a==='end'){UI.sel=null;act({type:'end'});return}
-  else if(a==='buy'){act({type:'buy',i:+b.dataset.i});return}
+  else if(a==='end'){UI.sel=null;UI.shopOpen=false;act({type:'end'});return}
+  else if(a==='buy'){UI.shopOpen=false;act({type:'buy',i:+b.dataset.i});return}
   else if(a==='reroll'){act({type:'reroll'});return}
   else if(a==='closepeek'){UI.peekClosed=G.turn+':'+G.peek.t}
   else if(a==='rankkind')UI.rankKind=b.dataset.k;
