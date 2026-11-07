@@ -594,7 +594,7 @@ try{SND.on=localStorage.getItem('duel.sound')!=='off'}catch(e){}
 function sndInit(c){SND.ctx=c;const comp=c.createDynamicsCompressor(),g=c.createGain();g.gain.value=.6;g.connect(comp);comp.connect(c.destination);SND.out=g;
   const b=c.createBuffer(1,c.sampleRate*2,c.sampleRate),a=b.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;SND.nb=b}
 function sndUnlock(){if(!SND.on)return;try{if(!SND.ctx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;sndInit(new A())}if(SND.ctx.state==='suspended')SND.ctx.resume()}catch(e){}}
-function sEnv(t,d,v,a){const g=SND.ctx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);g.connect(SND.out);return g}
+function sEnv(t,d,v,a){v*=SND.b||1;const g=SND.ctx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);g.connect(SND.out);return g}
 function sN(t,d,o){const c=SND.ctx,s=c.createBufferSource(),f=c.createBiquadFilter();s.buffer=SND.nb;s.loop=true;f.type=o.type||'bandpass';f.Q.value=o.q||1;f.frequency.setValueAtTime(o.f,t);if(o.f2)f.frequency.exponentialRampToValueAtTime(o.f2,t+d);
   s.connect(f);f.connect(sEnv(t,d,o.v||.5,o.a||.004));s.start(t,Math.random());s.stop(t+d+.02)}
 function sT(t,d,o){const c=SND.ctx,s=c.createOscillator();s.type=o.w||'sine';s.frequency.setValueAtTime(o.f,t);if(o.f2)s.frequency.exponentialRampToValueAtTime(o.f2,t+d);s.connect(sEnv(t,d,o.v||.3,o.a||.004));s.start(t);s.stop(t+d+.02)}
@@ -639,12 +639,12 @@ const SND_MAP={slash:'slash vampire venomblade',double:'twin joint twinfang veno
   mist:'miasma st_swamp',heal:'potion regen aid convert ring prayer',bigheal:'bigpotion greatheal revive panacea st_sanct',cure:'antidote cool acure',shield:'aguard cover',wall:'wall st_fort',thorn:'thorns',
   horn:'rally fury allin st_arena',buff:'keen whet guts',growl:'berserk dragon intimidate',debuff:'curseback',chain:'snare',mp:'meditate focus amp st_spring',drain:'manadrain silence',
   magic:'peek alchemy confuse balance barrier',draw:'supply spark council rebuild adraw plunder',time:'timestop',phoenix:'phoenix'};
+const SND_GAIN={slash:2.6,stab:3.2,shield:3.6,wall:3,thorn:2.2,chain:5,drain:3.4,magic:3,horn:3,set:3,buff:2.4,debuff:2.6,cure:2,mp:2,draw:1.6,growl:1.6,phoenix:1.6,heavy:1.6,shatter:1.6,whirl:1.4,fire:1.3};
 const SND_CARD={};Object.entries(SND_MAP).forEach(([r,s])=>s.split(' ').forEach(k=>SND_CARD[k]=r));
 const SND_CAT={atk:'slash',psn:'poison',fire:'fire',heal:'heal',cure:'cure',def:'shield',buff:'buff',debuff:'debuff',mp:'mp',magic:'magic',draw:'draw',skill:'heavy',team:'heal',stage:'magic'};
 function sndCard(f){if(!SND.on||!SND.ctx||SND.ctx.state!=='running'||document.hidden)return;
   try{const t=SND.ctx.currentTime+.02,r=!f.k?'set':SND_CARD[f.k]||SND_CAT[f.cat]||'slash';
-    if(f.stage){SR[r](t);return}
-    sN(t,.12,{f:900,f2:2600,q:1,v:.22});SR[r](t+.34);if(f.combo)sArp(t+.1,[784,1047,1319],.05,.22,'triangle',.12)}catch(e){}}
+    SND.b=1;sN(t,.12,{f:900,f2:2600,q:1,v:f.stage?.0002:.22});SND.b=SND_GAIN[r]||1;SR[r](f.stage?t:t+.34);SND.b=1;if(f.combo)sArp(t+.1,[784,1047,1319],.05,.22,'triangle',.12)}catch(e){}}
 function sndToggle(){SND.on=!SND.on;try{localStorage.setItem('duel.sound',SND.on?'on':'off')}catch(e){}sndUnlock()}
 document.addEventListener('pointerdown',sndUnlock);document.addEventListener('keydown',sndUnlock);
 /* ---------- カードを使ったときの演出（G.fx を見て全員の画面で再生する） ---------- */
