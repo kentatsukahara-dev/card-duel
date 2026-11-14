@@ -226,20 +226,20 @@ body.fx-shake #app{animation:fxShake .32s linear}
 @keyframes fxShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-1px)}}
 /* 体力が減るほど強くなる演出: 傷（6割以下）→ 危険（3割以下）→ 瀕死（15%以下）。自分の体力は画面の縁も赤くなる */
 .seat,.me{position:relative}
-[data-hp]::before,[data-hp]::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .5s}
-[data-hp]::after{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 120' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23e25b4f' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M200 6 L172 22 L180 34 L150 46 L158 60 L128 70'/%3E%3Cpath d='M172 22 L190 40'/%3E%3Cpath d='M150 46 L136 38'/%3E%3Cpath d='M0 112 L26 96 L20 84 L48 76'/%3E%3Cpath d='M26 96 L40 108'/%3E%3C/g%3E%3C/svg%3E") center/100% 100% no-repeat}
-[data-hp]::before{box-shadow:inset 0 0 26px color-mix(in srgb,var(--danger) 70%,transparent)}
-[data-hp=hurt]{border-color:color-mix(in srgb,var(--danger) 35%,var(--line))}
-[data-hp=hurt]::after{opacity:.35}
-[data-hp=hurt] .bar:not(.mp) i{background:#e2a14f}
-[data-hp=low]{border-color:color-mix(in srgb,var(--danger) 65%,var(--line))}
-[data-hp=low]::after{opacity:.6}
-[data-hp=low]::before{animation:hpGlow 1.8s ease-in-out infinite}
-[data-hp=crit]{border-color:var(--danger)}
-[data-hp=crit]::after{opacity:.95}
-[data-hp=crit]::before{animation:hpGlow .9s ease-in-out infinite}
-[data-hp=crit] h2,[data-hp=crit] h3{color:#ff8a7e}
-[data-hp=crit] .bar:not(.mp) i{animation:hpBlink .9s steps(2) infinite}
+.seat[data-hp]::before,.seat[data-hp]::after,.me[data-hp]::before,.me[data-hp]::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .5s}
+.seat[data-hp]::after,.me[data-hp]::after{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 50'%3E%3Cg fill='none' stroke='%23ff7a6c' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M90 2 L70 12 L76 20 L54 28 L60 38 L42 46'/%3E%3Cpath d='M70 12 L84 24'/%3E%3Cpath d='M54 28 L44 20'/%3E%3C/g%3E%3C/svg%3E") right top/90px 50px no-repeat}
+.seat[data-hp]::before,.me[data-hp]::before{box-shadow:inset 0 0 22px color-mix(in srgb,var(--danger) 70%,transparent)}
+.seat[data-hp=hurt],.me[data-hp=hurt]{border-color:color-mix(in srgb,var(--danger) 35%,var(--line))}
+.seat[data-hp=hurt]::after,.me[data-hp=hurt]::after{opacity:.45}
+.seat[data-hp=hurt] .bar:not(.mp) i,.me[data-hp=hurt] .bar:not(.mp) i{background:#e2a14f}
+.seat[data-hp=low],.me[data-hp=low]{border-color:color-mix(in srgb,var(--danger) 65%,var(--line))}
+.seat[data-hp=low]::after,.me[data-hp=low]::after{opacity:.7}
+.seat[data-hp=low]::before,.me[data-hp=low]::before{animation:hpGlow 1.8s ease-in-out infinite}
+.seat[data-hp=crit],.me[data-hp=crit]{border-color:var(--danger)}
+.seat[data-hp=crit]::after,.me[data-hp=crit]::after{opacity:1}
+.seat[data-hp=crit]::before,.me[data-hp=crit]::before{animation:hpGlow .9s ease-in-out infinite}
+.seat[data-hp=crit] h3,.me[data-hp=crit] h2{color:#ff8a7e}
+.seat[data-hp=crit] .bar:not(.mp) i,.me[data-hp=crit] .bar:not(.mp) i{animation:hpBlink .9s steps(2) infinite}
 .seat.dead::before,.seat.dead::after{display:none}
 body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9;opacity:0;transition:opacity .8s;
   background:radial-gradient(ellipse 75% 70% at 50% 50%,transparent 55%,color-mix(in srgb,var(--danger) 55%,transparent) 100%)}
