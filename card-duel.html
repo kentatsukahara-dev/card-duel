@@ -224,6 +224,31 @@ body.fx-shake #app{animation:fxShake .32s linear}
 @keyframes fxRing{0%{opacity:1;transform:translate(-50%,-50%) scale(.3)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
 @keyframes fxNum{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}25%{opacity:1;transform:translate(-50%,-60%) scale(1.2)}70%{opacity:1;transform:translate(-50%,-80%) scale(1)}100%{opacity:0;transform:translate(-50%,-115%) scale(1)}}
 @keyframes fxShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-1px)}}
+/* 体力が減るほど強くなる演出: 傷（6割以下）→ 危険（3割以下）→ 瀕死（15%以下）。自分の体力は画面の縁も赤くなる */
+.seat,.me{position:relative}
+[data-hp]::before,[data-hp]::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .5s}
+[data-hp]::after{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 120' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23e25b4f' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M200 6 L172 22 L180 34 L150 46 L158 60 L128 70'/%3E%3Cpath d='M172 22 L190 40'/%3E%3Cpath d='M150 46 L136 38'/%3E%3Cpath d='M0 112 L26 96 L20 84 L48 76'/%3E%3Cpath d='M26 96 L40 108'/%3E%3C/g%3E%3C/svg%3E") center/100% 100% no-repeat}
+[data-hp]::before{box-shadow:inset 0 0 26px color-mix(in srgb,var(--danger) 70%,transparent)}
+[data-hp=hurt]{border-color:color-mix(in srgb,var(--danger) 35%,var(--line))}
+[data-hp=hurt]::after{opacity:.35}
+[data-hp=hurt] .bar:not(.mp) i{background:#e2a14f}
+[data-hp=low]{border-color:color-mix(in srgb,var(--danger) 65%,var(--line))}
+[data-hp=low]::after{opacity:.6}
+[data-hp=low]::before{animation:hpGlow 1.8s ease-in-out infinite}
+[data-hp=crit]{border-color:var(--danger)}
+[data-hp=crit]::after{opacity:.95}
+[data-hp=crit]::before{animation:hpGlow .9s ease-in-out infinite}
+[data-hp=crit] h2,[data-hp=crit] h3{color:#ff8a7e}
+[data-hp=crit] .bar:not(.mp) i{animation:hpBlink .9s steps(2) infinite}
+.seat.dead::before,.seat.dead::after{display:none}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9;opacity:0;transition:opacity .8s;
+  background:radial-gradient(ellipse 75% 70% at 50% 50%,transparent 55%,color-mix(in srgb,var(--danger) 55%,transparent) 100%)}
+body[data-hp=hurt]::after{opacity:.25}
+body[data-hp=low]::after{opacity:.55;animation:hpEdge 1.8s ease-in-out infinite}
+body[data-hp=crit]::after{opacity:.9;animation:hpEdge 1s ease-in-out infinite}
+@keyframes hpGlow{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes hpBlink{50%{filter:brightness(1.7)}}
+@keyframes hpEdge{0%,100%{opacity:.45}15%{opacity:1}30%{opacity:.6}45%{opacity:.95}}
 /* スマホ用: 幅が狭い端末では1画面に収める（上に相手、中に状況、下に手札）。ショップは下から出す */
 .mob-only{display:none}
 .mbtns{display:contents}
@@ -736,6 +761,10 @@ const SND_CAT={atk:'slash',psn:'poison',fire:'fire',heal:'heal',cure:'cure',def:
 function sndCard(f){if(!SND.on||!SND.ctx||SND.ctx.state!=='running'||document.hidden)return;
   try{const t=SND.ctx.currentTime+.02,r=!f.k?'set':SND_CARD[f.k]||SND_CAT[f.cat]||'slash';
     SND.b=1;sN(t,.12,{f:900,f2:2600,q:1,v:f.stage?.0002:.22});SND.b=SND_GAIN[r]||1;SR[r](f.stage?t:t+.34);SND.b=1;if(f.combo)sArp(t+.1,[784,1047,1319],.05,.22,'triangle',.12)}catch(e){}}
+SR.heart=t=>{sT(t,.16,{f:64,f2:40,v:.8});sN(t,.09,{f:260,f2:90,type:'lowpass',v:.5});sT(t+.24,.18,{f:56,f2:36,v:.6});sN(t+.24,.1,{f:220,f2:80,type:'lowpass',v:.38})};
+// 自分の体力が瀕死のあいだは心臓の音が鳴り続ける
+setInterval(()=>{if(SIM||!SND.on||!SND.ctx||SND.ctx.state!=='running'||document.hidden||!document.body||!document.body.dataset||document.body.dataset.hp!=='crit')return;
+  try{SND.b=1.2;SR.heart(SND.ctx.currentTime+.02);SND.b=1}catch(e){}},1000);
 function sndToggle(){SND.on=!SND.on;try{localStorage.setItem('duel.sound',SND.on?'on':'off')}catch(e){}sndUnlock()}
 document.addEventListener('pointerdown',sndUnlock);document.addEventListener('keydown',sndUnlock);
 /* ---------- カードを使ったときの演出（G.fx を見て全員の画面で再生する） ---------- */
@@ -881,6 +910,7 @@ function play(idx,ti){
 /* ---------- render helpers ---------- */
 const fmt=ms=>{const s=Math.max(0,Math.floor(ms/1000));return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`};
 function chip(t,cat,cls=''){return `<span class="chip ${cls}" data-cat="${cat}">${esc(t)}</span>`}
+function hpLv(p){if(!p||!p.alive||!p.max)return '';const r=Math.max(0,p.hp)/p.max;return r<=.15||(p.hp<=4&&r<=.3)?'crit':r<=.3?'low':r<=.6?'hurt':''}
 function chips(p,self){const r=[];
   if(p.poison>0)r.push(chip(`毒 ${p.poison}`,'psn'));
   p.delayed.forEach(d=>r.push(chip(`遅効毒 あと${d.t}`,'psn')));
@@ -1079,6 +1109,7 @@ function softRender(){const ae=document.activeElement;if(ae&&ae.closest&&ae.clos
 function render(){
   const app=$('#app');if(!app)return;
   document.body.dataset.stage=G&&G.stage?G.stage:'';document.body.dataset.view=G?'game':'';
+  {const vi=G&&!G.over?viewerIndex():-1;document.body.dataset.hp=vi>=0&&G.players[vi]?hpLv(G.players[vi]):''}
   if(!G){
     const keep=lastScreen===UI.screen,vals={};
     if(keep&&typeof document.querySelectorAll==='function')document.querySelectorAll('#app input,#app select,#app textarea').forEach(el=>{if(el.id)vals[el.id]=el.type==='checkbox'||el.type==='radio'?el.checked:el.value});
@@ -1106,7 +1137,7 @@ function boardHtml(){
   else if(online)tools+=G.over?`<button class="btn" data-act="leavematch">ロビーに戻る</button>`:`<button class="btn" data-act="resign">降参する</button>`;
   else tools+=`<button class="btn" data-act="totitle">タイトルへ</button>`;
   head+=`<button class="btn mob-only" data-act="menu" aria-expanded="${!!UI.menu}">メニュー</button><span class="mbtns ${UI.menu?'open':''}">${tools}</span>`;
-  const seat=j=>{const o=G.players[j];return `<div class="seat ${o.alive?'':'dead'} ${j===G.cur&&!G.over?'turn':''} ${G.cfg.team&&!spec&&j%2===vi%2?'ally':''}" data-seat="${j}">
+  const seat=j=>{const o=G.players[j];return `<div data-hp="${hpLv(o)}" class="seat ${o.alive?'':'dead'} ${j===G.cur&&!G.over?'turn':''} ${G.cfg.team&&!spec&&j%2===vi%2?'ally':''}" data-seat="${j}">
     <div class="seat-h"><h3>${teamTag(j)}${esc(o.name)}</h3>${o.alive?(j===G.cur&&!G.over?'<span class="tag">手番</span>':o.cpu?'<span class="cpu">CPU</span>':''):'<span class="sub">脱落</span>'}</div>
     ${bars(o)}<div class="chips">${chips(o,false)}</div><div class="sub">手札 ${o.hand.length}枚</div></div>`};
   const label=online?(spec?'オンライン対戦を観戦中':G.cfg.team?'オンライン 2対2':'オンライン レート戦'):G.cfg.rated?'CPU レート戦':(G.cfg.label||'カスタム');
@@ -1125,7 +1156,7 @@ function boardHtml(){
       if(cb)actH=`<span class="combo-chip">合わせ技「${esc(cb.name)}」発動：${esc(cb.text.split('：')[1])}${d.comboX2?'（2倍）':''}</span>`+actH;
       actH+=`<button class="btn" data-act="discard" ${G.discarded?'disabled':''}>捨てる${G.discarded?'（済）':''}</button>`}
     else actH='<span class="sub">カードを選んでください</span>';
-    mePanel=`<section class="me" data-seat="${G.players.indexOf(p)}"><div class="me-h"><h2>${esc(p.name)}${my?' の番':''}</h2><div class="bars">${bars(p)}</div>
+    mePanel=`<section class="me" data-hp="${hpLv(p)}" data-seat="${G.players.indexOf(p)}"><div class="me-h"><h2>${esc(p.name)}${my?' の番':''}</h2><div class="bars">${bars(p)}</div>
       ${my?`<span class="pill">使用 <b class="num">${G.played} / ${G.maxPlays}</b></span><span class="pill">直前 <b>${G.lastCat?CATS[G.lastCat]:'なし'}</b></span>`:''}</div>
       <div class="chips">${chips(p,true)}</div>
       <div class="hand">${p.hand.map((c,i)=>my?cardHtml(c,(UI.sel===i?'sel ':'')+(whyNot(c)?'no':''),`data-act="sel" data-i="${i}" aria-pressed="${UI.sel===i}"`):cardHtml(c,'','tabindex="-1"')).join('')||'<span class="sub">手札なし</span>'}</div>
