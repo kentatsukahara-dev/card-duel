@@ -599,6 +599,7 @@ const EN_PAT=[
  [/^(.+?)の時間が止まっている。ターンを飛ばす$/,m=>`${N(m[1])}'s time is stopped. Turn skipped`],
  [/^(.+?)の鉄壁が攻撃を完全に防いだ$/,m=>`${N(m[1])}'s Iron Wall blocked the attack`],
  [/^(.+?)の盾\((\d+)\)が(\d+)軽減して壊れた$/,m=>`${N(m[1])}'s shield (${m[2]}) absorbed ${m[3]} and broke`],
+ [/^(.+?)に毒\+(\d+)$/,m=>`${N(m[1])}: Poison +${m[2]}`],
  [/^(.+?)の受け流し$/,m=>`${N(m[1])} parries`],[/^(.+?)はダメージを受けなかった$/,m=>`${N(m[1])} took no damage`],[/^(.+?)の反撃の構え$/,m=>`${N(m[1])} counters`],
  [/^(.+?)の結界が毒を防いだ$/,m=>`${N(m[1])}'s Barrier blocked the poison`],[/^(.+?)の結界が炎症を防いだ$/,m=>`${N(m[1])}'s Barrier blocked the burn`],
  [/^(.+?)は炎症（残り(\d+)）$/,m=>`${N(m[1])} is burning (${m[2]} left)`],
