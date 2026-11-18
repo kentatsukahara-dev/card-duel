@@ -224,6 +224,10 @@ body.fx-shake #app{animation:fxShake .32s linear}
 @keyframes fxRing{0%{opacity:1;transform:translate(-50%,-50%) scale(.3)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
 @keyframes fxNum{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}25%{opacity:1;transform:translate(-50%,-60%) scale(1.2)}70%{opacity:1;transform:translate(-50%,-80%) scale(1)}100%{opacity:0;transform:translate(-50%,-115%) scale(1)}}
 @keyframes fxShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-1px)}}
+/* 英語表示: 英文は長いのでカードの説明文を少し小さく */
+html[lang=en] .card .tx{font-size:11px;line-height:1.35}
+html[lang=en] .card .nm{font-size:15px}
+.langrow{display:flex;justify-content:flex-end;margin-bottom:-8px}
 /* 体力が減るほど強くなる演出: 傷（6割以下）→ 危険（3割以下）→ 瀕死（15%以下）。自分の体力は画面の縁も赤くなる */
 .seat,.me{position:relative}
 .seat[data-hp]::before,.seat[data-hp]::after,.me[data-hp]::before,.me[data-hp]::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .5s}
@@ -451,6 +455,226 @@ const BASE={
 };
 for(const k in BASE)if(BASE[k].cat==='stage')BASE[k].quick=1;
 let CARDS={...BASE};
+/* ---------- 英語表示: 画面に出す直前に文字を英語に置き換える。対戦データ・ログ自体は日本語のまま（オンラインで言語が違っても同じ対戦ができる） ---------- */
+var LANG=(()=>{try{const v=localStorage.getItem('duel.lang');if(v==='en'||v==='ja')return v}catch(e){}return /^ja/i.test((typeof navigator!=='undefined'&&navigator.language)||'ja')?'ja':'en'})();
+const EN_CARD={slash:['Slash','3 damage'],kick:['Roundhouse Kick','4 damage'],whirl:['Whirlwind','2 damage to all foes'],joint:['Joint Strike','3 damage. Doubled when a combo triggers'],
+ rally:['Rally','Your next attack card hits all foes'],firerain:['Fire Rain','Burn 2 turns on all foes'],supply:['Supply','Draw 2'],spark:['Insight','Draw 1. Free (doesn\'t use a play)'],
+ council:['War Council','Draw 3'],plunder:['Plunder','Steal 1 random card from a foe\'s hand'],rebuild:['Regroup','Draw until you hold 5 cards'],quick:['Gale Thrust','2 damage. Free (doesn\'t use a play)'],
+ rush:['Charge','4 damage. +2 if the foe has no face-down shield'],breaker:['Shield Breaker','Break all the foe\'s shields, then 2 damage'],execute:['Execute','3 damage. +5 if the foe has 10 HP or less'],
+ twin:['Double Slash','3 damage ×2. Must be your only card this turn'],flurry:['Flurry','1 damage ×2–5 (random)'],flameblade:['Flame Sword','3 damage + Burn 1 turn'],
+ smash:['Heavy Blow','6 damage. Must be your only card this turn'],combo:['Combo Strike','2 damage ×2'],triple:['Triple Thrust','1 damage ×3. Buffs apply to every hit'],
+ pierce:['Piercing Thrust','2 damage. Ignores shields'],reckless:['Reckless Strike','7 damage. You also take 2 damage'],chase:['Follow-up','2 damage. +3 if the foe is poisoned or burning'],
+ rage:['Rage','2 damage. +1 for every 5 HP you have lost'],fury:['Fighting Spirit','Attack +2 this turn and next'],allin:['All-Out','Your next attack card deals double damage'],
+ keen:['Keen Edge','Your next attack card ignores shields'],whet:['Whetstone','Your next attack card gets +2 per hit. Great with multi-hits'],
+ berserk:['Berserk','Attack +3 for 3 turns. You take +1 damage meanwhile'],shield:['Shield','Set face down. Reduces damage by its value, then breaks'],
+ wall:['Iron Wall','Block the next attack completely. You can\'t attack on your next turn'],counter:['Counter Stance','Set face down. Deal 3 damage to the next attacker'],
+ thorns:['Thorn Armor','For 2 rounds, deal 1 damage to each attacker'],parry:['Parry','Set face down. Send back half the next attack\'s damage'],
+ barrier:['Barrier','Immune to Poison and Burn for 2 rounds'],needle:['Poison Needle','Poison +2'],venomblade:['Venom Blade','2 damage. Poison +2 if it gets past shields'],
+ venomfang:['Venom Fangs','1 damage ×2. Poison +1 per hit'],delayed:['Slow Poison','Poison +4 kicks in after 3 of the foe\'s turns'],
+ detonate:['Toxic Burst','Clear the foe\'s Poison and deal 2× that much damage (ignores shields)'],toxify:['Toxify','Your next Poison is doubled'],ember:['Ember','Burn 3 turns'],
+ burn:['Scorch','Break 1 foe shield and Burn 1 turn'],spread:['Wildfire','If burning, +2 turns (else Burn 1). Also Burn 1 on every other foe'],potion:['Potion','HP +4'],
+ bigpotion:['Mega Potion','HP +8. Must be your only card this turn'],regen:['Regenerate','HP +2 at the start of your turn for 3 turns'],vampire:['Vampire Slash','3 damage. Heal the damage dealt'],
+ guts:['Guts','Survive the next lethal hit with 1 HP'],convert:['Poison Shift','Clear your Poison and heal 2× that much (+1 if none)'],prayer:['Prayer','HP +3, MP +2'],
+ antidote:['Antidote','Clear your Poison and Slow Poison'],cool:['Cool Down','Clear your Burn'],panacea:['Panacea','Clear all ailments and debuffs, HP +2'],meditate:['Meditate','MP +3'],
+ focus:['Focus','MP +2. Attack +1 this turn and next'],manadrain:['Mana Drain','1 damage. Steal 2 MP from the foe'],twinfang:['Twin Fangs','3 damage ×2'],
+ hundred:['Hundred Fists','1 damage ×6. Buffs apply to every hit'],meteor:['Meteor','8 damage. Ignores shields'],hellfire:['Hellfire','4 damage + Burn 3 turns'],
+ miasma:['Toxic Mist','Poison +3 on all foes'],quake:['Earthquake','4 damage to all foes (ignores shields)'],greatheal:['Great Heal','HP +10'],
+ peek:['Clairvoyance','See the foe\'s hand and face-down cards'],alchemy:['Alchemy','Discard your hand, then draw that many +1'],confuse:['Confusion','The foe discards 2 random cards'],
+ curseback:['Curse Return','Move all your Poison, Burn and debuffs to the foe'],mirror:['Mirror Image','Set face down. Reflect the next attack card back at the attacker'],
+ balance:['Scales of Fate','Set your HP and the foe\'s to their average'],burst:['Mana Burst','Spend all MP and deal that much damage (ignores shields)'],
+ holysword:['Holy Sword','5 damage. Ignores shields'],thousand:['Thousand Needles','Poison +6'],phoenix:['Phoenix Feather','When you fall, revive with 10 HP'],
+ dragon:['Dragon\'s Blood','Max HP +5, HP +5'],timestop:['Time Stop','Skip the foe\'s next turn'],intimidate:['Intimidate','Foe\'s attack −2 for their next 2 turns'],
+ disarm:['Disarm','Clear the foe\'s buffs; their attack −1 next turn'],snare:['Snare','The foe can use only 1 card next turn'],silence:['Mana Seal','Set the foe\'s MP to 0'],
+ aid:['Healing Hand','Ally HP +6'],aguard:['Guardian Shield','Set a 4-value shield on an ally'],amp:['Mana Gift','Ally MP +4'],adraw:['Reinforcements','Your ally draws 2'],
+ acure:['Cleansing Hand','Clear an ally\'s Poison, Burn and debuffs'],cover:['Cover','Until your next turn, take one attack aimed at your ally'],
+ duo:['Team Thrust','3 damage. +2 if your ally is alive'],ring:['Healing Circle','You and your ally HP +4'],revive:['Revive','Revive a fallen ally with 10 HP'],
+ st_swamp:['Poison Swamp','Poison damage +1. Antidote can\'t be used'],st_volcano:['Volcano','Burn lasts 1 turn longer. Everyone takes 1 damage at turn start'],
+ st_sanct:['Sanctuary','Healing doubled. Heavy Blow and Reckless Strike can\'t be used'],st_fort:['Fortress','Shields +1. Heavy Blow and Reckless Strike deal 2 less'],
+ st_arena:['Arena','Attack +1. Shields −1'],st_spring:['Mana Spring','+1 MP at turn start. Special cards cost 1 less MP']};
+const EN_CATS={atk:'Attack',buff:'Buff',def:'Defense',psn:'Poison',fire:'Burn',heal:'Heal',cure:'Cure',mp:'MP',draw:'Draw',skill:'Special',magic:'Magic',debuff:'Debuff',stage:'Stage',team:'Team'};
+const EN_COMBO={'連携攻撃':['Chain Attack','Attack → Attack: +2 damage (ignores shields)'],'爆炎撃':['Blast Strike','Burn → Attack: +3 damage (ignores shields)'],
+ '毒撃':['Venom Strike','Poison → Attack: Poison +2'],'魔法剣':['Magic Blade','Magic/Special → Attack: +2 damage, MP +2'],'崩し打ち':['Break Strike','Debuff → Attack: +3 damage (ignores shields)'],
+ '盾撃':['Shield Bash','Defense → Attack: 2 damage per face-down card you have'],'気合いの連鎖':['Spirit Chain','Buff/MP/Draw → Attack: +2 damage'],'癒しの連鎖':['Healing Chain','Heal/Cure → Heal/Cure: HP +3']};
+const EN_DICT={
+ 'デビルパーティー':'Devil Party','やさしい':'Easy','ふつう':'Normal','つよい':'Hard','ブロンズ':'Bronze','シルバー':'Silver','ゴールド':'Gold','プラチナ':'Platinum','ダイヤモンド':'Diamond',
+ 'オンライン':'Online','勝ち':'Win','負け':'Loss','引き分け':'Draw','名無し':'Nameless','あなた':'You','プレイヤー':'Player',
+ // 試合画面
+ 'ターン':'Turn','経過':'Time','山札':'Deck','サドンデス':'Sudden death','残り':'Left','秒':'s','音 あり':'Sound on','音 なし':'Sound off','ルール':'Rules','観戦をやめる':'Stop watching',
+ 'ロビーに戻る':'Back to lobby','降参する':'Resign','タイトルへ':'To title','メニュー':'Menu','手番':'Turn','脱落':'Out','味方':'Ally','敵':'Enemy',
+ 'オンライン対戦を観戦中':'Watching an online match','オンライン 2対2':'Online 2v2','オンライン レート戦':'Online ranked','CPU レート戦':'CPU ranked','カスタム':'Custom','カスタム 2対2':'Custom 2v2',
+ 'CPU 2対2':'CPU 2v2','ひとつの端末で 2対2':'Same device 2v2','ひとつの端末で対戦':'Same device','観戦中':'Spectating','手札と伏せ札の中身は見えません':'Hands and face-down cards are hidden',
+ '試合終了':'Match over','送信中…':'Sending…','捨てる':'Discard','捨てる（済）':'Discard (done)','カードを選んでください':'Select a card','使用':'Plays','直前':'Last','なし':'None',
+ '手札なし':'No cards','ショップ':'Shop','ターン終了':'End turn','ステージ':'Stage','平原':'Plains','特別な効果なし':'No special effect','閉じる':'Close','状態なし':'No status',
+ '根性':'Guts','不死鳥':'Phoenix','攻撃不可':'Can\'t attack','伏せ札':'Face-down','あなたのチームの勝ち':'Your team wins','あなたの勝ち':'You win','観戦一覧へ':'Back to matches',
+ 'もう一度':'Play again','決着':'Result','試合時間':'Match time','総ターン':'Turns','オンラインレート':'Online rating','CPUレート':'CPU rating','最終状態':'Final state','手札を見る':'Show hand',
+ 'MP 全部':'MP all','自作':'Custom','ショップ限定':'Shop only','（名前）':'(Name)','ショップを閉じる':'Close shop',
+ '2対2専用のカードです':'This card is for 2v2 only','復活させられる味方がいません':'No ally to revive','味方が倒れているので使えません':'Can\'t use: your ally is down',
+ 'このターンはもうカードを使えません':'You can\'t use more cards this turn','MPが0なので使えません':'Can\'t use with 0 MP','鉄壁の反動で、このターンは攻撃できません':'Iron Wall recoil: you can\'t attack this turn',
+ '聖域では使えません':'Can\'t be used in the Sanctuary','毒沼では解毒薬が効きません':'Antidote doesn\'t work in the Poison Swamp','すでにこのステージです':'Already on this stage',
+ 'カードショップ':'Card Shop','MPで1ターンに1枚買える。買ったカードは手札に入る':'Buy 1 card per turn with MP. It goes to your hand','品ぞろえを入れ替える（MP1）':'Reroll (MP 1)',
+ '相手の番':'Opponent\'s turn','このターンはもう買いました':'Already bought this turn','MP不足':'Not enough MP',
+ // ログ
+ '山札が尽きた。サドンデス開始（毎ターン2ダメージ）':'The deck ran out. Sudden death! (2 damage every turn)','長期戦になった。サドンデス開始（毎ターン2ダメージ）':'The battle dragged on. Sudden death! (2 damage every turn)',
+ '号令で全体攻撃になった':'Rally made it hit all foes','奪える手札がなかった':'No card to steal','相手側で決着が記録されました':'The result was recorded on the other side',
+ '相手の接続が切れたため勝利':'Won because the opponent disconnected','部屋を管理している人の接続が切れたため、対戦を終了しました':'The host disconnected, so the match ended',
+ '毒':'Poison','火山':'Volcano','受け流し':'Parry','攻撃':'attack','反撃':'Counter','反動':'Recoil','相手全員':'all foes',
+ // 通信
+ '接続を確認しています…':'Checking connection…','この環境ではオンライン機能を使えません（CPU戦・ひとつの端末・カスタムは遊べます）':'Online features aren\'t available here (CPU, Same Device and Custom still work)',
+ 'オンライン機能を使うには、claude.ai にサインインした状態で開いてください':'To play online, open this page signed in to claude.ai','観戦・ランキングのみ利用できます':'Only spectating and ranking are available',
+ '対戦相手を探しています':'Looking for an opponent','対戦部屋に入れませんでした。もう一度探してください':'Couldn\'t join the match room. Please search again',
+ '相手の準備ができませんでした。もう一度探してください':'The opponent wasn\'t ready. Please search again','送信できませんでした。もう一度押してください':'Couldn\'t send. Please press again',
+ '保存しました':'Saved','保存できませんでした（閲覧のみの権限では保存できません）':'Couldn\'t save (view-only access can\'t save)','このブラウザに保存しました':'Saved in this browser',
+ 'ニックネームを入れてください':'Enter a nickname','プロフィール登録には claude.ai でのサインインが必要です':'Sign in to claude.ai to register a profile','登録しました':'Registered',
+ '保存できませんでした（このページの権限が「閲覧のみ」だと登録できません）':'Couldn\'t save (you can\'t register with view-only access)','カードの名前を入れてください':'Enter a card name',
+ '効果を1つ以上入れてください':'Add at least one effect','作れるカードは30種までです':'You can make up to 30 cards',
+ // タイトル
+ '攻撃・毒・炎症・魔法を組み合わせて、相手の体力を削り切るカードバトル。':'A card battle: combine attacks, poison, burn and magic to wipe out your opponent\'s HP.',
+ 'オンライン対戦':'Online Match','離れた人と1対1。レート戦・ルール固定':'1v1 with players anywhere. Ranked, fixed rules','CPU対戦':'vs CPU','レート戦・ルール固定。強さはレートで自動':'Ranked, fixed rules. Difficulty follows your rating',
+ 'ひとつの端末で':'Same Device','2〜4人で1台を交代で回す':'2–4 players take turns on one device','ルールを自由に設定・カードを作る':'Set your own rules, make cards','ランキング':'Ranking',
+ '登録プレイヤーのレート順':'Registered players by rating','観戦':'Spectate','いま行われている対戦を見る':'Watch matches in progress','プロフィール':'Profile','ニックネームとアイコンの登録':'Set your nickname and icon',
+ '絵柄の登録':'Card Art','カードに画像を付ける（持ち主・編集者のみ）':'Add images to cards (owner and editors only)','ルール・カード一覧':'Rules & Cards','全カードと合わせ技':'All cards and combos',
+ '登録済み':'Registered','プロフィール未登録':'No profile yet','← タイトル':'← Title',
+ '観戦データを読み込んでいます…':'Loading the match…','対戦の準備をしています…':'Preparing the match…','少し待っても表示されない場合は、対戦が終わった可能性があります。':'If nothing appears after a while, the match may have ended.',
+ '相手と接続しています。15秒たっても始まらない場合はロビーに戻ります。':'Connecting to your opponent. If it doesn\'t start within 15 seconds, you\'ll return to the lobby.',
+ // ルール枠・各画面
+ '固定ルール':'Fixed rules','2人対戦・体力30・最初の手札6枚・標準山札（全種類1セット）':'2 players · 30 HP · 6-card starting hand · standard deck (one set of every card)','自作カードは使えません':'Custom cards can\'t be used',
+ '1ターン60秒。時間切れで自動的にターン終了':'60 seconds per turn. Your turn ends automatically when time runs out','30秒以上接続が切れると負け。降参もできます':'Disconnected for 30+ seconds means a loss. You can also resign',
+ '勝敗で「オンラインレート」が上下します（CPUレートとは別）':'Wins and losses change your Online rating (separate from CPU rating)',
+ '2対2は4人で戦うチーム戦です。レートは変わりません。接続が切れた人や降参した人だけ脱落し、味方は戦い続けます':'2v2 is a 4-player team battle with no rating change. Only players who disconnect or resign drop out; their ally keeps fighting',
+ '自作カードを作る・確認する':'Make / view custom cards','この表示ではリアルタイム通信が使えません。claude.ai で開き直してください。':'Real-time play isn\'t available in this view. Please reopen it in claude.ai.',
+ 'プロフィールを読み込んでいます…':'Loading profile…','オンライン対戦にはプロフィール登録が必要です。':'You need a profile to play online.','プロフィールを登録する':'Register a profile',
+ '2対2の参加者を探しています…':'Looking for 2v2 players…','対戦相手を探しています…':'Looking for an opponent…',
+ 'そろうと自動で対戦が始まります。相手と味方は選べません（待っている順に組み合わせます）。':'The match starts automatically. You can\'t choose opponents or allies (matched in waiting order).',
+ '探すのをやめる':'Stop searching','1対1（レート戦）':'1v1 (ranked)','2対2（4人）':'2v2 (4 players)',
+ '対戦相手は「CPUレート」で自動決定：〜1399 やさしい／1400〜1649 ふつう／1650〜 つよい':'Your CPU rating picks the opponent: –1399 Easy / 1400–1649 Normal / 1650– Hard',
+ '勝敗で「CPUレート」が上下します（オンラインレートとは別）':'Wins and losses change your CPU rating (separate from Online rating)','今回の相手':'Opponent this time','対戦開始':'Start',
+ '2対2で遊ぶ（味方CPUと組む・レートなし）':'Play 2v2 (team up with an ally CPU, unranked)',
+ '1台の画面を交代で回して遊びます。ルールは標準（体力30・手札6枚・標準山札）、レーティングは変わりません。':'Take turns on one screen. Standard rules (30 HP, 6-card hand, standard deck); ratings don\'t change.',
+ '人数':'Players','2対2（1・3番 対 2・4番）':'2v2 (1 & 3 vs 2 & 4)','あなた（プレイヤー1）の名前':'Your name (Player 1)',
+ 'ルールを自由に決めて遊べます。作ったカードも使えます。レーティングは変わりません。':'Play with your own rules. Your cards can be used too. Ratings don\'t change.',
+ '相手':'Opponent','CPU':'CPU','ひとつの端末で交代':'Take turns on one device','CPUの強さ':'CPU level','体力':'HP','最初の手札':'Starting hand','山札の作り方':'Deck type','標準（全種類入り）':'Standard (every card)',
+ 'ランダム':'Random','山札の枚数':'Cards in deck','1セット':'1 set','この設定で開始':'Start with these settings','カードを作る':'Make a card','名前':'Name','例：雷撃':'e.g. Thunderbolt','種類':'Type','盾を無視':'Ignore shields',
+ 'プレビュー':'Preview','カードを保存':'Save card','カードを作るにはプロフィール登録が必要です。':'You need a profile to make cards.','プロフィールに保存。ほかの人もカスタムで使えます':'Saved to your profile. Others can use them in Custom',
+ 'このブラウザに保存':'Saved in this browser','削除':'Delete','まだ作ったカードはありません。':'You haven\'t made any cards yet.','みんなのカード':'Everyone\'s cards','未登録':'Unregistered',
+ '必要MP':'MP cost','ダメージ':'Damage','攻撃回数':'Hits','炎症ターン':'Burn turns','回復':'Heal','盾の数値':'Shield value','MP回復':'MP gain','攻撃+（2ターン）':'Attack + (2 turns)','自分へのダメージ':'Self damage',
+ 'カードを引く':'Draw cards','効果なし':'No effect',
+ 'ニックネーム（12文字まで）':'Nickname (up to 12 characters)','例：炎の剣士':'e.g. Flame Knight','ひとこと（40文字まで）':'Comment (up to 40 characters)','例：毒デッキ使いです':'e.g. I play a poison deck','アイコン':'Icon',
+ '本名・メールアドレス・住所などの個人情報は入れないでください。ニックネームとひとことは、このページを開けるほかの人にも表示されます。':'Don\'t enter personal info such as your real name, email or address. Your nickname and comment are shown to others who can open this page.',
+ '更新する':'Update','登録する':'Register','プロフィール登録は、claude.ai にサインインしてこのページを開いたときに使えます。':'Profiles work when you open this page signed in to claude.ai.',
+ '直近の対戦':'Recent matches','まだ対戦記録がありません':'No matches yet','順位':'Rank','称号':'Title','戦績':'Record','まだ登録プレイヤーがいません。':'No registered players yet.','登録プレイヤーはまだいません。':'No registered players yet.',
+ 'いま行われているオンライン対戦を見られます。手札と伏せ札の中身は表示されません。':'Watch online matches in progress. Hands and face-down cards are hidden.','観戦する':'Watch',
+ 'いまは対戦が行われていません。始まると自動でここに表示されます。':'No matches right now. They\'ll show up here automatically.',
+ // ルール一覧
+ 'ルールとカード一覧':'Rules & Card List','合わせ技一覧':'Combos','チーム（2対2専用）':'Team (2v2 only)',
+ 'ターン開始時：遅効毒 → 毒ダメージ（その後毒−1）→ 再生 → MP+2 → 山札から1枚引く（手札の上限10枚）。もっと引きたいときはドローカードを使う。':'At turn start: Slow Poison → Poison damage (then Poison −1) → Regenerate → MP +2 → draw 1 (hand limit 10). Use Draw cards to draw more.',
+ '2対2：1・3番と2・4番がチーム。敵味方が交互に動く。攻撃と全体攻撃は敵だけに当たり、相手チームを全員倒すと勝ち。':'2v2: players 1 & 3 and 2 & 4 are teams, taking turns alternately. Attacks hit only enemies. Defeat the whole enemy team to win.',
+ 'チームのカードは2対2の山札とショップにだけ入る。1対1や3人以上の対戦には出ない。降参や接続切れで抜けた味方は蘇生できない。2対2は120ターンを超えるとサドンデスになる。':'Team cards appear only in 2v2 decks and shops, never in 1v1 or free-for-all games. Allies who resigned or disconnected can\'t be revived. 2v2 goes to sudden death after turn 120.',
+ '1ターンにカードを最大2枚使える。1ターンに1枚まで、使わずに捨ててもよい。':'You can use up to 2 cards per turn, and discard up to 1 card per turn without using it.',
+ 'MPは最初5、毎ターン+2、最大10。必殺・魔法カードやショップでの購入に使う。':'MP starts at 5, +2 each turn, max 10. Spend it on Special and Magic cards and in the shop.',
+ 'カードショップには常に3枚並ぶ。1ターンに1枚までMPで買え、買ったカードはすぐ手札に入る（使用枠は消費しない）。MP1で品ぞろえを入れ替えられる。':'The shop always has 3 cards. Buy up to 1 per turn with MP; it goes straight to your hand (doesn\'t use a play). Reroll the shop for 1 MP.',
+ '盾・反撃の構え・受け流し・鏡像は伏せて置く。相手からは「伏せ札」の枚数しか見えない。':'Shield, Counter Stance, Parry and Mirror Image are set face down. Opponents only see how many face-down cards you have.',
+ '炎症中の相手は、攻撃1回ごとにダメージ+2（毒ダメージは増えない）。毒は盾を無視する。':'A burning target takes +2 damage per attack hit (poison damage isn\'t increased). Poison ignores shields.',
+ '攻撃・妨害は誰にでもできる。「相手全員」のカード（全体攻撃）はほかのプレイヤー全員に当たる。':'You can attack or hinder anyone. "All foes" cards hit every other player.',
+ '合わせ技：同じターンに続けてカードを使うと、直前のカードの系統によって追加効果が出る（下の一覧）。':'Combos: playing cards in a row in the same turn adds a bonus based on the previous card\'s type (list below).',
+ 'ステージカードは使用枠を消費しない。出すと盤面の色も変わる。':'Stage cards don\'t use a play. They also change the table\'s color.',
+ '山札が尽きたらサドンデス。全員がターン開始時に2ダメージを受ける。':'When the deck runs out, sudden death begins: everyone takes 2 damage at turn start.',
+ // 絵柄
+ 'カードに画像を付けます。登録した絵柄は、このページを開く全員の画面に表示されます。':'Add images to cards. Registered art is shown to everyone who opens this page.',
+ '絵柄を登録できるのは、ページの持ち主と編集者だけです。':'Only the page owner and editors can register art.','画像ファイルから':'From image files','選んだ画像を登録':'Register selected images',
+ 'データを貼り付けて':'Paste data','ここに貼り付け':'Paste here','貼り付けたデータを登録':'Register pasted data','書き出し':'Export','絵柄をファイルに書き出す':'Export art to a file','絵柄を外す':'Remove art',
+ 'まだ登録された絵柄はありません。':'No art registered yet.','画像ファイルを選んでください':'Choose image files','読み込んでいます…':'Loading…','保存しています…':'Saving…'
+};
+const EN_PAT=[
+ [/^ゲーム開始（(.+)）$/,m=>'Game start ('+m[1].split('・').map(x=>trT(x.replace(/^(標準山札|ランダム山札) (\d+)種類$/,(_,a,b)=>(a==='標準山札'?'Standard deck':'Random deck')+', '+b+' kinds'))).join(' · ')+')'],
+ [/^(\d+)人$/,m=>m[1]+' players'],[/^手札(\d+)枚$/,m=>'Hand '+m[1]],[/^山札(\d+)枚$/,m=>'Deck '+m[1]],[/^体力(\d+)$/,m=>'HP '+m[1]],[/^自作カード(\d+)種$/,m=>m[1]+' custom cards'],[/^2対2$/,()=>'2v2'],
+ [/^(.+?)に(\d+)ダメージ（(.+)）$/,m=>`${N(m[1])} takes ${m[2]} damage (${N(m[3])})`],
+ [/^魔力爆発 MP(\d+)$/,m=>'Mana Burst, MP '+m[1]],
+ [/^(.+?)の体力\+(\d+)（(.+)）$/,m=>`${N(m[1])} HP +${m[2]} (${N(m[3])})`],
+ [/^(.+?)は根性で踏みとどまった（体力1）$/,m=>`${N(m[1])} hung on with Guts (HP 1)`],
+ [/^(.+?)は不死鳥の羽で復活した（体力(\d+)）$/,m=>`${N(m[1])} rose again with Phoenix Feather (HP ${m[2]})`],
+ [/^(.+?)が倒れた$/,m=>`${N(m[1])} fell`],
+ [/^(.+?)はショップで「(.+)」を買った（MP(\d+)）$/,m=>`${N(m[1])} bought "${N(m[2])}" (MP ${m[3]})`],
+ [/^(.+?)は「(.+)」を捨てた$/,m=>`${N(m[1])} discarded "${N(m[2])}"`],
+ [/^(.+?)の遅効毒が発動。毒\+(\d+)$/,m=>`${N(m[1])}'s Slow Poison kicks in. Poison +${m[2]}`],
+ [/^(.+?)の時間が止まっている。ターンを飛ばす$/,m=>`${N(m[1])}'s time is stopped. Turn skipped`],
+ [/^(.+?)の鉄壁が攻撃を完全に防いだ$/,m=>`${N(m[1])}'s Iron Wall blocked the attack`],
+ [/^(.+?)の盾\((\d+)\)が(\d+)軽減して壊れた$/,m=>`${N(m[1])}'s shield (${m[2]}) absorbed ${m[3]} and broke`],
+ [/^(.+?)の受け流し$/,m=>`${N(m[1])} parries`],[/^(.+?)はダメージを受けなかった$/,m=>`${N(m[1])} took no damage`],[/^(.+?)の反撃の構え$/,m=>`${N(m[1])} counters`],
+ [/^(.+?)の結界が毒を防いだ$/,m=>`${N(m[1])}'s Barrier blocked the poison`],[/^(.+?)の結界が炎症を防いだ$/,m=>`${N(m[1])}'s Barrier blocked the burn`],
+ [/^(.+?)は炎症（残り(\d+)）$/,m=>`${N(m[1])} is burning (${m[2]} left)`],
+ [/^合わせ技「(.+?)」(（2倍）)?！$/,m=>`Combo "${N(m[1])}"${m[2]?' (×2)':''}!`],
+ [/^合わせ技「(.+?)」発動：(.+?)(（2倍）)?$/,m=>`Combo "${N(m[1])}": ${N(m[2])}${m[3]?' (×2)':''}`],
+ [/^合わせ技「(.+?)」$/,m=>`Combo "${N(m[1])}"`],
+ [/^(.+?)の盾(\d+)枚を砕いた$/,m=>`Shattered ${N(m[1])}'s ${m[2]} shield(s)`],[/^乱れ打ちは(\d+)回$/,m=>`Flurry hits ${m[1]} times`],
+ [/^(.+?)は(\d+)枚引いた$/,m=>`${N(m[1])} drew ${m[2]}`],
+ [/^(.+?)：「(.+)」(?:→ (.+))?$/,m=>`${N(m[1])}: "${N(m[2])}"${m[3]?' → '+N(m[3]):''}`],
+ [/^(.+?)が(.+?)をかばった$/,m=>`${N(m[1])} covered ${N(m[2])}`],[/^(.+?)の鏡像が攻撃を跳ね返した$/,m=>`${N(m[1])}'s Mirror Image reflected the attack`],
+ [/^(.+?)の最大体力\+5、体力\+5$/,m=>`${N(m[1])}: Max HP +5, HP +5`],[/^(.+?)のMP\+(\d+)$/,m=>`${N(m[1])} MP +${m[2]}`],
+ [/^(.+?)に遅効毒を仕込んだ$/,m=>`Slow Poison planted on ${N(m[1])}`],[/^(.+?)は毒がなく、毒爆は不発$/,m=>`${N(m[1])} has no poison; Toxic Burst fizzled`],
+ [/^(.+?)の盾\((\d+)\)を焼き払った$/,m=>`Burned away ${N(m[1])}'s shield (${m[2]})`],[/^(.+?)は(.+?)から手札を1枚奪った$/,m=>`${N(m[1])} stole a card from ${N(m[2])}`],
+ [/^(.+?)の毒・炎症・弱体が消えた$/,m=>`${N(m[1])}'s Poison, Burn and debuffs are gone`],[/^(.+?)の毒が消えた$/,m=>`${N(m[1])}'s Poison is gone`],[/^(.+?)の炎症が消えた$/,m=>`${N(m[1])}'s Burn is gone`],
+ [/^(.+?)の状態異常と弱体が消えた$/,m=>`${N(m[1])}'s ailments and debuffs are gone`],[/^(.+?)が(.+?)のMPを(\d+)奪った$/,m=>`${N(m[1])} stole ${m[3]} MP from ${N(m[2])}`],
+ [/^(.+?)の強化が消えた$/,m=>`${N(m[1])}'s buffs are gone`],[/^(.+?)のMPが0になった$/,m=>`${N(m[1])}'s MP fell to 0`],
+ [/^(.+?)は手札を(\d+)枚捨てて(\d+)枚引いた$/,m=>`${N(m[1])} discarded ${m[2]} and drew ${m[3]}`],[/^(.+?)は「(.+)」を落とした$/,m=>`${N(m[1])} dropped "${N(m[2])}"`],
+ [/^(.+?)の呪いが(.+?)に移った$/,m=>`${N(m[1])}'s curses moved to ${N(m[2])}`],[/^天秤が傾いた。(.+?)と(.+?)の体力が(\d+)に$/,m=>`The scales tipped. ${N(m[1])} and ${N(m[2])} now have ${m[3]} HP`],
+ [/^(.+?)の次のターンが止まる$/,m=>`${N(m[1])}'s next turn is frozen`],[/^(.+?)に守護の盾を伏せた$/,m=>`Guardian Shield set on ${N(m[1])}`],
+ [/^(.+?)は(.+?)をかばう構えをとった$/,m=>`${N(m[1])} is ready to cover ${N(m[2])}`],[/^(.+?)が復活した（体力(\d+)）$/,m=>`${N(m[1])} revived (HP ${m[2]})`],
+ [/^ステージが「(.+)」に変わった$/,m=>`The stage changed to "${N(m[1])}"`],[/^(.+?)が降参しました$/,m=>`${N(m[1])} resigned`],
+ [/^(.+?)がショップの品ぞろえを入れ替えた$/,m=>`${N(m[1])} rerolled the shop`],[/^(.+?)の時間切れ$/,m=>`${N(m[1])} ran out of time`],[/^(.+?)の接続が切れました$/,m=>`${N(m[1])} disconnected`],
+ // 名前
+ [/^(味方CPU|敵CPU(\d)|CPU(\d?))（(.+)）$/,m=>(m[1]==='味方CPU'?'Ally CPU':m[2]?'Enemy CPU'+m[2]:'CPU'+(m[3]||''))+' ('+N(m[4])+')'],
+ [/^CPU（(.+?)・(\d+)）$/,m=>`CPU (${N(m[1])}, ${m[2]})`],[/^CPU (.+)$/,m=>'CPU '+N(m[1])],
+ [/^プレイヤー([A-D\d])$/,m=>'Player '+m[1]],[/^(.+?)・(.+)チーム$/,m=>`Team ${N(m[1])} & ${N(m[2])}`],[/^チーム([AB])$/,m=>'Team '+m[1]],
+ // 画面
+ [/^手札 (\d+)枚$/,m=>`Hand: ${m[1]}`],[/^(.+) の番です…$/,m=>`${N(m[1])}'s turn…`],[/^(.+) の番$/,m=>`${N(m[1])}'s turn`],[/^(.+) の勝ち$/,m=>`${N(m[1])} wins`],
+ [/^「(.+)」を相手全員に使う$/,m=>`Use "${N(m[1])}" on all foes`],[/^「(.+)」を (.+) に使う$/,m=>`Use "${N(m[1])}" on ${N(m[2])}`],[/^「(.+)」を使う$/,m=>`Use "${N(m[1])}"`],
+ [/^透視：(.+) の手の内$/,m=>`Clairvoyance: ${N(m[1])}'s hand`],[/^伏せ札：(.+)$/,m=>'Face-down: '+N(m[1])],[/^(.+)：体力 (-?\d+)$/,m=>`${N(m[1])}: HP ${m[2]}`],
+ [/^ターン (\d+)$/,m=>'Turn '+m[1]],[/^画面を (.+) に渡してください。ほかの人は手札を見ないように。$/,m=>`Pass the screen to ${N(m[1])}. Everyone else, don't look at the hand.`],
+ [/^毒 (\d+)$/,m=>'Poison '+m[1]],[/^遅効毒 あと(\d+)$/,m=>'Slow Poison in '+m[1]],[/^炎症 (\d+)$/,m=>'Burn '+m[1]],[/^再生 (\d+)$/,m=>'Regen '+m[1]],
+ [/^攻撃\+(\d+)$/,m=>'Atk +'+m[1]],[/^攻撃−(\d+)$/,m=>'Atk −'+m[1]],[/^狂化 (\d+)$/,m=>'Berserk '+m[1]],[/^茨 (\d+)$/,m=>'Thorns '+m[1]],[/^結界 (\d+)$/,m=>'Barrier '+m[1]],
+ [/^盾 (\d+)$/,m=>'Shield '+m[1]],[/^伏せ札 ×(\d+)$/,m=>'Face-down ×'+m[1]],[/^(.+)がかばう$/,m=>`${N(m[1])} covers`],
+ [/^(.+)はターン最初の1枚としてしか使えません$/,m=>`${N(m[1])} must be the first card of your turn`],[/^MPが足りません（必要(\d+)・今(\d+)）$/,m=>`Not enough MP (need ${m[1]}, have ${m[2]})`],
+ [/^MP (\d+) で買う(?:（(.+)）)?$/,m=>`Buy for MP ${m[1]}`+(m[2]?` (${N(m[2])})`:'')],
+ [/^対戦の保存に失敗しました（(.+)）$/,m=>`Couldn't save the match (${m[1]})`],[/^いま(\d+)人がページを開いています$/,m=>`${m[1]} on this page now`],
+ [/^待っている人 1対1：(\d+)人・2対2：(\d+)人／ページを開いている人 (\d+)人$/,m=>`Waiting — 1v1: ${m[1]}, 2v2: ${m[2]} / On this page: ${m[3]}`],
+ [/^待っている人 (\d+)人(（4人そろうと開始）)?$/,m=>`Waiting: ${m[1]}`+(m[2]?' (starts at 4)':'')],[/^ページを開いている人 (\d+)人$/,m=>`On this page: ${m[1]}`],
+ [/^両者の自作カードが山札に入ります（1人あたり合計(\d+)枚まで。あなたの分：(\d+)枚）$/,m=>`Both players' custom cards go into the deck (up to ${m[1]} each; yours: ${m[2]})`],
+ [/^プレイヤー(\d)の名前$/,m=>`Player ${m[1]}'s name`],[/^(\d+)枚$/,m=>m[1]+' cards'],[/^(\d+)種$/,m=>m[1]+' kinds'],[/^価格MP(\d+)$/,m=>'Price MP '+m[1]],
+ [/^自分のカードを入れる（(\d+)種）$/,m=>`Include my cards (${m[1]})`],[/^みんなのカードを入れる（(\d+)種）$/,m=>`Include everyone's cards (${m[1]})`],
+ [/^自分のカード（(.+)）$/,m=>`My cards (${N(m[1])})`],[/^作者：(.+)$/,m=>'By '+N(m[1])],[/^(\d+)戦(\d+)勝$/,m=>`${m[1]} games, ${m[2]} wins`],
+ [/^山札 (\d+)枚（右下が枚数。盾の数値は 2・3・4）$/,m=>`Deck: ${m[1]} cards (bottom right = copies; shield values are 2, 3, 4)`],
+ [/^(\d+)ダメージ(?:×(\d+)回)?(（盾無視）)?$/,m=>`${m[1]} damage${m[2]?' ×'+m[2]:''}${m[3]?' (ignores shields)':''}`],[/^毒\+(\d+)$/,m=>'Poison +'+m[1]],[/^炎症(\d+)ターン$/,m=>`Burn ${m[1]} turns`],
+ [/^体力\+(\d+)$/,m=>'HP +'+m[1]],[/^盾(\d+)を伏せる$/,m=>`Set a ${m[1]} shield`],[/^2ターン攻撃\+(\d+)$/,m=>`Attack +${m[1]} for 2 turns`],[/^自分に(\d+)ダメージ$/,m=>`${m[1]} damage to yourself`],[/^(\d+)枚引く$/,m=>'Draw '+m[1]],
+ [/^(.+)レート$/,m=>N(m[1])+' rating'],
+ [/^(\d+)枚を登録しました$/,m=>`Registered ${m[1]}`],[/^(\d+)枚の絵柄を書き出しました$/,m=>`Exported ${m[1]} images`],[/^登録済みの絵柄（(\d+)枚）$/,m=>`Registered art (${m[1]})`],
+];
+let EN_MAP=null;const EN_CACHE=new Map();const JP_RE=/[぀-ヿ㐀-鿿！-～]/;
+function enMap(){if(EN_MAP)return EN_MAP;const m=new Map(Object.entries(EN_DICT));
+  for(const k in EN_CATS)if(CATS[k])m.set(CATS[k],EN_CATS[k]);
+  for(const k in EN_CARD){const d=BASE[k];if(d){m.set(d.name,EN_CARD[k][0]);m.set(d.text,EN_CARD[k][1])}}
+  if(typeof COMBOS!=='undefined')COMBOS.forEach(c=>{const e=EN_COMBO[c.name];if(!e)return;m.set(c.name,e[0]);m.set(c.text,e[1]);const a=c.text.split('：')[1];if(a)m.set(a,e[1].split(': ')[1])});
+  return EN_MAP=m}
+const N=s=>trT(s);
+function trT(s){if(LANG!=='en'||!s||!JP_RE.test(s))return s;let r=EN_CACHE.get(s);if(r!=null)return r;
+  const x=/^(\s*)([\s\S]*?)(\s*)$/.exec(s);r=x[1]+trCore(x[2])+x[3];if(EN_CACHE.size>4000)EN_CACHE.clear();EN_CACHE.set(s,r);return r}
+function trCore(s){const M=enMap();if(M.has(s))return M.get(s);
+  for(const [re,f] of EN_PAT){const m=re.exec(s);if(m)return f(m)}
+  for(const [sep,j] of [['。','. '],['／',' / '],['・',' · '],['、',', ']]){if(!s.includes(sep))continue;
+    const ps=s.split(sep),out=ps.map(p=>p?trT(p):p);if(out.some((o,i)=>o!==ps[i]))return out.join(j).replace(/\s+$/,'')}
+  const q=/^(.*?)（(.+)）$/.exec(s);if(q){const a=trT(q[1]),b=trT(q[2]);if(a!==q[1]||b!==q[2])return a+' ('+b+')'}
+  return s}
+function trTextNode(n){const v=n.nodeValue;if(!v||!JP_RE.test(v))return;const p=n.parentElement;if(!p||p.closest('[data-notr],script,style,textarea'))return;const t=trT(v);if(t!==v)n.nodeValue=t}
+function trEl(e){if(e.closest('[data-notr]'))return;for(const a of ['placeholder','aria-label','title']){const v=e.getAttribute(a);if(v&&JP_RE.test(v)){const t=trT(v);if(t!==v)e.setAttribute(a,t)}}
+  if(e.tagName==='INPUT'&&/^プレイヤー\d$/.test(e.value))e.value=trT(e.value)}
+function trTree(r){if(LANG!=='en'||!r)return;if(r.nodeType===3)return trTextNode(r);if(r.nodeType!==1||/^(SCRIPT|STYLE)$/.test(r.tagName))return;trEl(r);
+  const w=document.createTreeWalker(r,5);let n;while((n=w.nextNode())){if(n.nodeType===3)trTextNode(n);else trEl(n)}}
+function langTitle(){try{document.title=LANG==='en'?'Devil Party':'デビルパーティー';document.documentElement.lang=LANG}catch(e){}}
+function setLang(v){LANG=v==='en'?'en':'ja';try{localStorage.setItem('duel.lang',LANG)}catch(e){}EN_CACHE.clear();langTitle()}
+function langBtn(cls){return `<button class="btn ${cls||''}" data-act="lang" data-notr>${LANG==='en'?'日本語':'English'}</button>`}
+if(typeof MutationObserver!=='undefined'&&typeof document!=='undefined'&&document.documentElement){
+  new MutationObserver(ms=>{if(LANG!=='en')return;for(const m of ms){if(m.type==='characterData')trTextNode(m.target);else m.addedNodes.forEach(trTree)}})
+    .observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+  langTitle()}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
@@ -1132,7 +1356,7 @@ function boardHtml(){
   const st=G.stage?CARDS[G.stage]:null;
   let head=`<span class="pill pc-only">経過 <b class="num" id="clock">${fmt((G.end||Date.now())-G.start)}</b></span><span class="pill">ターン <b class="num">${G.turn}</b></span><span class="pill">山札 <b class="num">${G.deck.length}</b>${G.sudden?' ・サドンデス':''}</span>`;
   if(online&&!G.over)head+=`<span class="pill">残り <b class="num" id="tleft">${Math.max(0,TURN_SEC-Math.floor((Date.now()-(G.turnStart||Date.now()))/1000))}</b>秒</span>`;
-  let tools=`<button class="btn" data-act="sound">音 ${SND.on?'あり':'なし'}</button><button class="btn" data-act="catalog">ルール</button>`;
+  let tools=`${langBtn()}<button class="btn" data-act="sound">音 ${SND.on?'あり':'なし'}</button><button class="btn" data-act="catalog">ルール</button>`;
   if(spec)tools+=`<button class="btn" data-act="stopwatch">観戦をやめる</button>`;
   else if(online)tools+=G.over?`<button class="btn" data-act="leavematch">ロビーに戻る</button>`:`<button class="btn" data-act="resign">降参する</button>`;
   else tools+=`<button class="btn" data-act="totitle">タイトルへ</button>`;
@@ -1216,7 +1440,7 @@ function screenHtml(){
 function titleHtml(){
   const online=NET.peers.filter(p=>p.kind==='viewer').length;
   return `<div class="panel title-panel">
-    <div class="crest">${avatar('flame')}${avatar('drop')}${avatar('sword')}</div>
+    <div class="langrow">${langBtn('small')}</div><div class="crest">${avatar('flame')}${avatar('drop')}${avatar('sword')}</div>
     <h1 class="hero big">デビルパーティー</h1>
     <p class="lead">攻撃・毒・炎症・魔法を組み合わせて、相手の体力を削り切るカードバトル。</p>
     ${profileChip()}
@@ -1312,7 +1536,7 @@ function rankingHtml(){
   const tab=k=>`<button class="btn ${kind===k?'primary':''}" data-act="rankkind" data-k="${k}" aria-pressed="${kind===k}">${KIND_NAME[k]}レート</button>`;
   return `<div class="panel">${backBtn()}<h1 class="hero">ランキング</h1><div class="actions">${tab('online')}${tab('cpu')}</div>
     ${!canOnline()?`<div class="notice">${esc(NET.status)}</div>`:rows.length?`<div class="tbl"><table><thead><tr><th>順位</th><th>プレイヤー</th><th>${KIND_NAME[kind]}レート</th><th>称号</th><th>戦績</th></tr></thead><tbody>
-    ${rows.map((p,i)=>`<tr class="${p.uid===NET.uid?'me-row':''}"><td class="num">${i+1}</td><td><span class="who">${avatar(p.icon)}<span><b>${esc(p.name)}</b>${p.comment?`<br><span class="sub">${esc(p.comment)}</span>`:''}</span></span></td><td class="num">${p._r}</td><td>${tier(p._r)}</td><td class="num">${p._g}戦${p._w}勝</td></tr>`).join('')}
+    ${rows.map((p,i)=>`<tr class="${p.uid===NET.uid?'me-row':''}"><td class="num">${i+1}</td><td><span class="who">${avatar(p.icon)}<span><b>${esc(p.name)}</b>${p.comment?`<br><span class="sub" data-notr>${esc(p.comment)}</span>`:''}</span></span></td><td class="num">${p._r}</td><td>${tier(p._r)}</td><td class="num">${p._g}戦${p._w}勝</td></tr>`).join('')}
     </tbody></table></div>`:'<p class="sub">まだ登録プレイヤーがいません。</p>'}</div>`}
 function watchHtml(){
   if(NET.ready&&NET.db)watchList();
@@ -1453,6 +1677,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   if(a==='go'){UI.screen=b.dataset.s;if(UI.screen==='watch')watchList()}
   else if(a==='totitle'){if(UI.cpuTimer){clearTimeout(UI.cpuTimer);UI.cpuTimer=null}G=null;UI.screen='title';if(NET.queue)stopQueue()}
   else if(a==='sound')sndToggle();
+  else if(a==='lang')setLang(LANG==='en'?'ja':'en');
   else if(a==='menu')UI.menu=!UI.menu;
   else if(a==='shopopen')UI.shopOpen=true;
   else if(a==='shopclose')UI.shopOpen=false;
